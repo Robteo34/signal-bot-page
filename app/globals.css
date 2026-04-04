@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #050505;
+  --surface: #111111;
+  --border: #1A1A1A;
+  --text-primary: #E8E8E0;
+  --text-secondary: #888888;
+  --green: #5DCAA5;
+  --amber: #EF9F27;
+  --red: #D85A30;
+  --blue: #378ADD;
+  --gray: #444444;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: 'Courier New', Courier, monospace;
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+  overscroll-behavior: none;
+}
+
+/* Prevent text selection during swipe */
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Smooth transitions between screens */
+.screen-enter {
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Pulse animation for OVERLAP alert */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.animate-pulse {
+  animation: pulse-dot 1s ease-in-out infinite;
+}
+
+/* Scrollbar hidden but functional */
+::-webkit-scrollbar {
+  width: 0;
+  background: transparent;
+}
+
+/* Input reset for dark theme */
+input {
+  background: #111;
+  color: #E8E8E0;
+  border: 1px solid #1A1A1A;
+  outline: none;
+  font-family: inherit;
+}
+
+input::placeholder {
+  color: #333;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
