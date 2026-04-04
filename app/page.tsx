@@ -18,6 +18,7 @@ import MacroEventsStrip from '@/components/MacroEventsStrip';
 import TopSharesCard from '@/components/TopSharesCard';
 import IGTipsCard from '@/components/IGTipsCard';
 import CryptoSection from '@/components/CryptoSection';
+import IntelligenceFeed from '@/components/IntelligenceFeed';
 
 type Screen = 'main' | 'detail' | 'journal';
 
@@ -314,6 +315,11 @@ export default function SignalBotApp() {
         {result.crypto_update && (
           <CryptoSection btc={result.crypto_update.btc} eth={result.crypto_update.eth} />
         )}
+
+        {/* ── Intelligence Feed ───────────────────────────────────────────── */}
+        {result.intelligence_feed?.length ? (
+          <IntelligenceFeed items={result.intelligence_feed} />
+        ) : null}
 
         {/* ── IG Tips ─────────────────────────────────────────────────────── */}
         {result.ig_tips && <IGTipsCard tips={result.ig_tips} />}

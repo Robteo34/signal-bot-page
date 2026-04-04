@@ -91,8 +91,8 @@ EU SHARES: DAX + CAC40 top movers → TOP 2
 BONDS: US 10Y, UK Gilt 10Y, German Bund (directional impact on forex/equities)
 CRYPTO (non-IG): BTC/USD, ETH/USD — sentiment and key levels only
 
-═══ X (TWITTER) INTELLIGENCE ═══
-Search X/Twitter for real-time sentiment:
+═══ X (TWITTER) INTELLIGENCE — STANDARD ═══
+Search X/Twitter for real-time market sentiment:
 1. "#FTSE OR #FTSE100" — UK market mood
 2. "$GBP OR #GBPUSD OR Cable" — sterling sentiment
 3. "#SPX OR #SP500 OR #markets" — US market mood
@@ -100,6 +100,67 @@ Search X/Twitter for real-time sentiment:
 5. "@IG_com OR @financialtimes OR @Reuters OR @Bloomberg" — breaking news
 6. Any trending financial/geopolitical hashtags right now
 Summarise as BULLISH / BEARISH / NEUTRAL per asset class with top 3 trending topics
+
+═══ ADVANCED INTELLIGENCE FEED — 5 CATEGORIES ═══
+Search X deeply for pre-market signals in each category below.
+Assign lead_time_hours = how many hours before this reaches mainstream financial media.
+Only include items with credibility >= 5 and genuine market relevance.
+Sort output array: IMMEDIATE first, then SOON, then WATCH.
+
+── 1. MILITARY_OSINT ──────────────────────────────────────────────
+Search for: aircraft movement screenshots (ADS-B/FlightRadar unusual patterns),
+naval vessel repositioning (carrier groups, destroyers, submarines surfacing),
+ground unit deployment confirmations, base activity surges,
+resignation/removal of senior military/intelligence officials,
+unscheduled COBRA/NSC/emergency cabinet meetings,
+unusual SIGINT or satellite imagery discussions.
+Key X sources to check: #OSINT, #militaryOSINT, aviation/naval tracking accounts,
+defence ministry official channels, eastern Europe conflict trackers.
+Market impact: Oil (Brent/WTI), Gold, GBP/USD, USD/JPY, defence sector shares.
+
+── 2. COMMODITY_PHYSICAL ──────────────────────────────────────────
+Search for: Brent vs WTI spread widening beyond $3 (paper vs physical divergence),
+tanker AIS tracking anomalies — Strait of Hormuz, Suez Canal, Panama Canal, Malacca Strait,
+pipeline incident reports (Nord Stream, Trans-Anatolian, Druzhba),
+refinery/LNG terminal unplanned shutdowns,
+SPR (Strategic Petroleum Reserve) drawdown or refill announcements,
+physical gold premium spikes (Shanghai vs London),
+copper/silver delivery failures at exchanges.
+Market impact: Brent Oil, WTI Oil, Natural Gas, Gold, Silver, GBP/USD.
+
+── 3. ESCALATION_LADDER ───────────────────────────────────────────
+Search for: new maritime exclusion zones or NOTAM/NAVTEX navigational closures,
+bilateral trade settlements shifting to RMB/Rupee/Ruble (de-dollarisation moves),
+ambassador recalls or diplomat expulsions between major powers,
+explicit public deadlines issued by governments for military/political ultimatums,
+sanctions package announcements or expansions,
+emergency UN Security Council session calls,
+central bank emergency meetings outside scheduled dates.
+Market impact: USD/JPY, GBP/USD, EUR/USD, Gold, Oil, affected equity indices.
+
+── 4. WHALE_INTEL ─────────────────────────────────────────────────
+Search for: unusual options flow sweeps on indices/ETFs/commodities (size > $5M),
+dark pool block print alerts on major instruments,
+liquidation cascade alerts (positions $50M+ forced closed),
+large institutional position disclosure filings (13F, CFTC CoT surprises),
+major hedge fund position reveals via X posts or media leaks,
+VIX spike alerts and put/call ratio extremes,
+margin call waves reported in crypto or equity derivatives.
+Key X sources: @unusual_whales, @OptionsHawk, crypto liquidation trackers,
+institutional flow aggregators, prime broker report leaks.
+Market impact: SPX500, Nasdaq100, Brent Oil, Gold, BTC/USD.
+
+── 5. POLISH_CEE ──────────────────────────────────────────────────
+Search Polish-language X specifically — this network often has NATO/eastern-flank
+intelligence 12–48 hours before English-language media.
+Polish search terms: "wojsko", "NATO", "Rosja", "mobilizacja", "Ukraina", "granica",
+"Białoruś", "obrona", "alarm", "ćwiczenia", "Sojusz", "artykuł 5".
+Check: Polish Ministry of Defence official channels, Polish military analysts,
+CEE (Czech, Slovak, Hungarian, Romanian) defence community accounts,
+Baltic state (Estonia, Latvia, Lithuania) defence ministry posts.
+Any activation of Article 4/5 discussions, NATO reinforcement movements,
+Belarusian/Russian troop concentration reports near Polish/Baltic borders.
+Market impact: EUR/PLN (via EUR/USD proxy), Gold, Oil, DAX, defence shares.
 
 ═══ SIGNAL STRENGTH 1–10 ═══
 9–10: Perfect storm, trade NOW  |  7–8: Strong, high conviction
@@ -178,6 +239,19 @@ Return ONLY this exact JSON — fill every field with real current analysis:
     "btc": {"price":"","direction":"LONG|SHORT|WAIT","key_level":"","note":"non-IG only"},
     "eth": {"price":"","direction":"LONG|SHORT|WAIT","key_level":"","note":"non-IG only"}
   },
-  "countdown_event": {"label":"next key market event","minutes":0}
+  "countdown_event": {"label":"next key market event","minutes":0},
+  "intelligence_feed": [
+    {
+      "category": "MILITARY_OSINT|COMMODITY_PHYSICAL|ESCALATION_LADDER|WHALE_INTEL|POLISH_CEE",
+      "signal": "specific description of what was found on X",
+      "source": "@handle or outlet name",
+      "credibility": 0,
+      "lead_time_hours": 0,
+      "market_impact": ["Brent Oil", "Gold"],
+      "direction": "LONG|SHORT|HEDGE",
+      "urgency": "IMMEDIATE|SOON|WATCH",
+      "summary": "max 10 słów po polsku"
+    }
+  ]
 }`;
 }

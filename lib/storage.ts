@@ -49,6 +49,27 @@ export interface MacroEvent {
   affect: string;
 }
 
+export type IntelCategory =
+  | 'MILITARY_OSINT'
+  | 'COMMODITY_PHYSICAL'
+  | 'ESCALATION_LADDER'
+  | 'WHALE_INTEL'
+  | 'POLISH_CEE';
+
+export type IntelUrgency = 'IMMEDIATE' | 'SOON' | 'WATCH';
+
+export interface IntelligenceItem {
+  category: IntelCategory;
+  signal: string;           // what was found
+  source: string;           // X account or outlet
+  credibility: number;      // 1–10
+  lead_time_hours: number;  // estimated hours before MSM coverage
+  market_impact: string[];  // specific IG instruments affected
+  direction: 'LONG' | 'SHORT' | 'HEDGE';
+  urgency: IntelUrgency;
+  summary: string;          // Polish, max 10 words
+}
+
 export interface ScanResult {
   action: 'LONG' | 'SHORT' | 'WAIT' | 'EXIT';
   primary_asset: string;
@@ -82,6 +103,7 @@ export interface ScanResult {
     btc: { price: string; direction: string; key_level: string; note: string };
     eth: { price: string; direction: string; key_level: string; note: string };
   };
+  intelligence_feed?: IntelligenceItem[];
   countdown_event: { label: string; minutes: number };
   // legacy / optional
   macro_context?: {
