@@ -34,8 +34,19 @@ export interface ScanResult {
     asset: string;
     direction: string;
     strength: number;
+    entry?: string;
+    stop?: string;
+    target?: string;
     reason: string;
   }>;
+  macro_context?: {
+    risk_mood: string;
+    dxy_bias: string;
+    vix_level: string;
+    boe_stance: string;
+    fed_stance: string;
+    key_level_watch: string;
+  };
   countdown_event: { label: string; minutes: number };
   session_plan: string;
 }
