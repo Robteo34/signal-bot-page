@@ -19,18 +19,19 @@ const URGENCY_COLOR: Record<IntelUrgency, string> = {
 
 // Polish urgency labels as requested
 const URGENCY_PL: Record<IntelUrgency, string> = {
-  IMMEDIATE: '⚡ NATYCHMIAST',
-  SOON:      '◉ WKRÓTCE',
-  WATCH:     '◎ OBSERWUJ',
+  IMMEDIATE: '⚡ NATYCHMIAST/IMMEDIATE',
+  SOON:      '◉ WKRÓTCE/SOON',
+  WATCH:     '◎ OBSERWUJ/WATCH',
 };
 
 const CAT: Record<IntelCategory, { label: string; color: string }> = {
-  MILITARY_OSINT:     { label: '⚔ MIL', color: '#D85A30' },
-  COMMODITY_PHYSICAL: { label: '⛽ COM', color: '#EF9F27' },
-  ESCALATION_LADDER:  { label: '▲ ESC', color: '#c084fc' },
-  FINANCIAL_OSINT:    { label: '◈ FIN', color: '#378ADD' },
-  MACRO_LEADING:      { label: '◎ MAC', color: '#5DCAA5' },
-  POLISH_CEE:         { label: '◆ CEE', color: '#22d3ee' },
+  MILITARY:  { label: '⚔ MIL',  color: '#D85A30' },
+  MACRO:     { label: '◎ MAC',  color: '#5DCAA5' },
+  EARNINGS:  { label: '◈ ERN',  color: '#EF9F27' },
+  OPTIONS:   { label: '◉ OPT',  color: '#c084fc' },
+  CRYPTO:    { label: '₿ CRY',  color: '#378ADD' },
+  SUPPLY:    { label: '⛽ SUP',  color: '#22d3ee' },
+  REGULA:    { label: '⚖ REG',  color: '#a78bfa' },
 };
 
 const DIR_COLOR: Record<string, string> = {

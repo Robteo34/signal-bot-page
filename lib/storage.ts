@@ -50,12 +50,13 @@ export interface MacroEvent {
 }
 
 export type IntelCategory =
-  | 'MILITARY_OSINT'
-  | 'COMMODITY_PHYSICAL'
-  | 'ESCALATION_LADDER'
-  | 'FINANCIAL_OSINT'
-  | 'MACRO_LEADING'
-  | 'POLISH_CEE';
+  | 'MILITARY'
+  | 'MACRO'
+  | 'EARNINGS'
+  | 'OPTIONS'
+  | 'CRYPTO'
+  | 'SUPPLY'
+  | 'REGULA';
 
 export type IntelUrgency = 'IMMEDIATE' | 'SOON' | 'WATCH';
 
