@@ -317,8 +317,12 @@ export default function SignalBotApp() {
         )}
 
         {/* ── Intelligence Feed ───────────────────────────────────────────── */}
-        {result.intelligence_feed?.length ? (
-          <IntelligenceFeed items={result.intelligence_feed} />
+        {(result.breaking_osint?.length || result.intelligence_feed?.length || result.top_intelligence_accounts?.length) ? (
+          <IntelligenceFeed
+            breaking={result.breaking_osint}
+            items={result.intelligence_feed}
+            accounts={result.top_intelligence_accounts}
+          />
         ) : null}
 
         {/* ── IG Tips ─────────────────────────────────────────────────────── */}

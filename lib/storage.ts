@@ -71,6 +71,27 @@ export interface IntelligenceItem {
   summary: string;          // Polish, max 10 words
 }
 
+// Fresh posts from verified accounts in last 2h that MSM hasn't covered
+export interface BreakingOsint {
+  account: string;          // @handle
+  credibility: number;      // 1–10
+  post_summary: string;     // Polish, max 15 words
+  market_impact: string[];  // IG instruments
+  direction: 'LONG' | 'SHORT' | 'HEDGE';
+  urgency: IntelUrgency;
+  lead_time_hours: number;
+  category: IntelCategory;
+}
+
+// Newly discovered accounts worth following
+export interface IntelAccount {
+  handle: string;           // @handle
+  reason: string;           // why this account is valuable
+  category: IntelCategory;
+  credibility: number;      // 1–10
+  todays_signal: string;    // Polish — what they posted relevant today
+}
+
 export interface ScanResult {
   action: 'LONG' | 'SHORT' | 'WAIT' | 'EXIT';
   primary_asset: string;
@@ -105,6 +126,8 @@ export interface ScanResult {
     eth: { price: string; direction: string; key_level: string; note: string };
   };
   intelligence_feed?: IntelligenceItem[];
+  breaking_osint?: BreakingOsint[];
+  top_intelligence_accounts?: IntelAccount[];
   countdown_event: { label: string; minutes: number };
   // legacy / optional
   macro_context?: {

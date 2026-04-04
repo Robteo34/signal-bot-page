@@ -91,6 +91,59 @@ EU SHARES: DAX + CAC40 top movers → TOP 2
 BONDS: US 10Y, UK Gilt 10Y, German Bund (directional impact on forex/equities)
 CRYPTO (non-IG): BTC/USD, ETH/USD — sentiment and key levels only
 
+═══ VERIFIED SIGNAL ACCOUNTS — CHECK EVERY SCAN ═══
+Check these specific accounts for posts in the last 2 hours.
+If they posted anything market-relevant, include it in breaking_osint.
+These accounts frequently have intelligence 2–48h ahead of Bloomberg/Reuters.
+
+MILITARY / GEOPOLITICAL OSINT:
+  @OSINTtechnical  — military hardware ID, unit movements, satellite imagery
+  @RALee85         — Russia/Ukraine conflict analysis, order of battle
+  @PawelJezowski   — Polish defence journalist, NATO eastern flank
+  @DawidKamizela   — Polish military/security analyst
+  @KapitanLisowski — Polish military analysis, CEE security
+  @PISM_Poland     — Polish Institute for International Affairs
+  @Archer83Actual  — military analysis, geopolitical
+  @GeoConfirmed    — geolocation verification of military events
+  @IntelCrab       — intelligence and conflict analysis
+
+COMMODITY / PHYSICAL MARKETS:
+  @MilkRoadMacro   — commodity macro, physical vs paper analysis
+  @JuneGoh_Sparta  — oil market structure, physical flows
+  @Kpler           — tanker tracking, commodity flow data
+  @VortexaEnergy   — energy intelligence, tanker positioning
+  @shipping_intel  — shipping lanes, port data, AIS anomalies
+
+FINANCIAL OSINT / OPTIONS / FLOW:
+  @unusual_whales  — options flow tracker, dark pool prints
+  @DeItaone        — breaking financial news, fast newswire
+  @FinancialJuice  — real-time market news, breaking moves
+  @FirstSquawk     — institutional newsflow, breaking headlines
+  @Newsquawk       — professional market news service
+  @zerohedge       — contrarian macro, market extremes, flow data
+
+MACRO / FED WATCHERS:
+  @NickTimiraos    — WSJ Fed reporter, often first on Fed policy shifts
+  @MikeZaccardi    — macro data analysis, economic indicators
+  @LizAnnSonders   — Schwab chief strategist, institutional macro
+  @KobeissiLetter  — macro commentary, market structure analysis
+  @MacroAlf        — global macro, cross-asset framework
+
+POLISH CEE NETWORK:
+  @PawelMalik_GG   — Polish geopolitical/security analysis
+  @luke_skiba       — Polish defence/security journalist
+  @KonradMuzyka    — CEE security, Russia analysis
+  @PiotrZychowicz  — Polish historian/geopolitical commentator
+
+ACCOUNT DISCOVERY — each scan also search for NEW accounts:
+Search these hashtags for posts with 500+ likes from accounts under 50k followers:
+  #OSINT #miltwitter #oott #OOTT #commodities #shipping #tanker
+  #NATO #military #geopolitical #macrotrading #optionsflow
+Look for: Flightradar24 screenshots with military context,
+  tanker AIS tracking posts, physical/paper commodity divergence analysis,
+  NATO/military unit movement posts in any language.
+Return top 3 newly discovered accounts as top_intelligence_accounts.
+
 ═══ X (TWITTER) INTELLIGENCE — STANDARD ═══
 Search X/Twitter for real-time market sentiment:
 1. "#FTSE OR #FTSE100" — UK market mood
@@ -362,6 +415,27 @@ Return ONLY this exact JSON — fill every field with real current analysis:
     "eth": {"price":"","direction":"LONG|SHORT|WAIT","key_level":"","note":"non-IG only"}
   },
   "countdown_event": {"label":"next key market event","minutes":0},
+  "breaking_osint": [
+    {
+      "account": "@handle",
+      "credibility": 0,
+      "post_summary": "co napisał — max 15 słów po polsku",
+      "market_impact": ["Brent Oil"],
+      "direction": "LONG|SHORT|HEDGE",
+      "urgency": "IMMEDIATE|SOON|WATCH",
+      "lead_time_hours": 0,
+      "category": "MILITARY_OSINT|COMMODITY_PHYSICAL|ESCALATION_LADDER|FINANCIAL_OSINT|MACRO_LEADING|POLISH_CEE"
+    }
+  ],
+  "top_intelligence_accounts": [
+    {
+      "handle": "@nowoodkryte_konto",
+      "reason": "why this account is a hidden gem — English, max 10 words",
+      "category": "MILITARY_OSINT|COMMODITY_PHYSICAL|ESCALATION_LADDER|FINANCIAL_OSINT|MACRO_LEADING|POLISH_CEE",
+      "credibility": 0,
+      "todays_signal": "co ważnego napisali dziś — max 12 słów po polsku"
+    }
+  ],
   "intelligence_feed": [
     {
       "category": "MILITARY_OSINT|COMMODITY_PHYSICAL|ESCALATION_LADDER|FINANCIAL_OSINT|MACRO_LEADING|POLISH_CEE",

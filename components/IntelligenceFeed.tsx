@@ -1,8 +1,15 @@
 'use client';
 
-import type { IntelligenceItem, IntelCategory, IntelUrgency } from '@/lib/storage';
+import { useState } from 'react';
+import type {
+  IntelligenceItem,
+  BreakingOsint,
+  IntelAccount,
+  IntelCategory,
+  IntelUrgency,
+} from '@/lib/storage';
 
-// ── Visual config ─────────────────────────────────────────────────────────────
+// ── Visual constants ──────────────────────────────────────────────────────────
 
 const URGENCY_COLOR: Record<IntelUrgency, string> = {
   IMMEDIATE: '#D85A30',
@@ -10,39 +17,42 @@ const URGENCY_COLOR: Record<IntelUrgency, string> = {
   WATCH:     '#378ADD',
 };
 
-const URGENCY_LABEL: Record<IntelUrgency, string> = {
-  IMMEDIATE: '⚡ IMMEDIATE',
-  SOON:      '◉ SOON',
-  WATCH:     '◎ WATCH',
+// Polish urgency labels as requested
+const URGENCY_PL: Record<IntelUrgency, string> = {
+  IMMEDIATE: '⚡ NATYCHMIAST',
+  SOON:      '◉ WKRÓTCE',
+  WATCH:     '◎ OBSERWUJ',
 };
 
-const CATEGORY_TAG: Record<IntelCategory, { label: string; color: string }> = {
-  MILITARY_OSINT:     { label: '⚔ MIL',  color: '#D85A30' },
-  COMMODITY_PHYSICAL: { label: '⛽ COM',  color: '#EF9F27' },
-  ESCALATION_LADDER:  { label: '▲ ESC',  color: '#c084fc' },
-  FINANCIAL_OSINT:    { label: '◈ FIN',  color: '#378ADD' },
-  MACRO_LEADING:      { label: '◎ MAC',  color: '#5DCAA5' },
-  POLISH_CEE:         { label: '◆ CEE',  color: '#22d3ee' },
+const CAT: Record<IntelCategory, { label: string; color: string }> = {
+  MILITARY_OSINT:     { label: '⚔ MIL', color: '#D85A30' },
+  COMMODITY_PHYSICAL: { label: '⛽ COM', color: '#EF9F27' },
+  ESCALATION_LADDER:  { label: '▲ ESC', color: '#c084fc' },
+  FINANCIAL_OSINT:    { label: '◈ FIN', color: '#378ADD' },
+  MACRO_LEADING:      { label: '◎ MAC', color: '#5DCAA5' },
+  POLISH_CEE:         { label: '◆ CEE', color: '#22d3ee' },
 };
 
 const DIR_COLOR: Record<string, string> = {
   LONG: '#5DCAA5', SHORT: '#D85A30', HEDGE: '#EF9F27',
 };
 
-// ── Credibility dots ──────────────────────────────────────────────────────────
+const URGENCY_ORDER: Record<IntelUrgency, number> = {
+  IMMEDIATE: 0, SOON: 1, WATCH: 2,
+};
 
-function CredibilityDots({ score }: { score: number }) {
+// ── Shared sub-components ─────────────────────────────────────────────────────
+
+function CredDots({ score }: { score: number }) {
   const n = Math.max(1, Math.min(10, Math.round(score)));
   const color = n >= 8 ? '#5DCAA5' : n >= 5 ? '#EF9F27' : '#D85A30';
   return (
-    <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
       {Array.from({ length: 5 }).map((_, i) => (
-        <div
+        <span
           key={i}
           style={{
-            width: 5,
-            height: 5,
-            borderRadius: '50%',
+            display: 'inline-block', width: 5, height: 5, borderRadius: '50%',
             backgroundColor: i < Math.round(n / 2) ? color : '#1A1A1A',
           }}
         />
@@ -50,15 +60,183 @@ function CredibilityDots({ score }: { score: number }) {
       <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#444', marginLeft: 2 }}>
         {n}/10
       </span>
+    </span>
+  );
+}
+
+function ImpactChips({ items }: { items: string[] }) {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+      {(items ?? []).map((inst, i) => (
+        <span
+          key={i}
+          style={{
+            fontSize: 9, fontFamily: 'monospace',
+            color: '#5DCAA5', backgroundColor: '#5DCAA511',
+            border: '1px solid #5DCAA530', borderRadius: 3, padding: '1px 5px',
+          }}
+        >
+          {inst}
+        </span>
+      ))}
     </div>
   );
 }
 
-// ── Single item ───────────────────────────────────────────────────────────────
+function SectionHeader({
+  title, count, urgent, color,
+}: {
+  title: string; count: number; urgent?: number; color: string;
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '7px 12px 5px',
+        backgroundColor: '#060606',
+        borderBottom: '1px solid #111',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontSize: 9, fontFamily: 'monospace', fontWeight: 'bold', color, letterSpacing: '0.1em' }}>
+          {title}
+        </span>
+        {urgent ? (
+          <span
+            style={{
+              fontSize: 9, fontFamily: 'monospace', color: '#D85A30',
+              backgroundColor: '#D85A3022', border: '1px solid #D85A3044',
+              borderRadius: 3, padding: '1px 5px',
+            }}
+          >
+            {urgent} ⚡
+          </span>
+        ) : null}
+      </div>
+      <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#333' }}>
+        {count}
+      </span>
+    </div>
+  );
+}
+
+// ── Breaking OSINT item ───────────────────────────────────────────────────────
+
+function BreakingItem({ item }: { item: BreakingOsint }) {
+  const urgColor = URGENCY_COLOR[item.urgency] ?? '#555';
+  const cat = CAT[item.category] ?? { label: item.category, color: '#888' };
+  const dirColor = DIR_COLOR[item.direction] ?? '#888';
+
+  return (
+    <div
+      style={{
+        borderLeft: `3px solid ${urgColor}`,
+        borderBottom: '1px solid #0d0d0d',
+        padding: '9px 12px 9px 10px',
+        backgroundColor: urgColor + '07',
+      }}
+    >
+      {/* Row 1: urgency + category + direction + lead time */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 9, fontFamily: 'monospace', fontWeight: 'bold', color: urgColor }}>
+          {URGENCY_PL[item.urgency]}
+        </span>
+        <span
+          style={{
+            fontSize: 9, fontFamily: 'monospace', color: cat.color,
+            backgroundColor: cat.color + '18', border: `1px solid ${cat.color}40`,
+            borderRadius: 3, padding: '1px 5px',
+          }}
+        >
+          {cat.label}
+        </span>
+        <span
+          style={{
+            fontSize: 9, fontFamily: 'monospace', fontWeight: 'bold', color: dirColor,
+            backgroundColor: dirColor + '15', border: `1px solid ${dirColor}40`,
+            borderRadius: 3, padding: '1px 5px',
+          }}
+        >
+          {item.direction}
+        </span>
+        <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#555', marginLeft: 'auto' }}>
+          -{item.lead_time_hours}h MSM
+        </span>
+      </div>
+
+      {/* Account + post summary */}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
+        <span style={{ fontSize: 10, fontFamily: 'monospace', color: urgColor, fontWeight: 'bold', flexShrink: 0 }}>
+          {item.account}
+        </span>
+        <span style={{ fontSize: 11, fontFamily: 'monospace', color: '#E8E8E0', lineHeight: 1.3 }}>
+          {item.post_summary}
+        </span>
+      </div>
+
+      {/* Impact + credibility */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <ImpactChips items={item.market_impact} />
+        <CredDots score={item.credibility} />
+      </div>
+    </div>
+  );
+}
+
+// ── Discovered account card ───────────────────────────────────────────────────
+
+function AccountCard({ acc }: { acc: IntelAccount }) {
+  const cat = CAT[acc.category] ?? { label: acc.category, color: '#888' };
+
+  return (
+    <div
+      style={{
+        borderBottom: '1px solid #0d0d0d',
+        padding: '9px 12px',
+        display: 'flex',
+        gap: 10,
+        alignItems: 'flex-start',
+      }}
+    >
+      {/* Handle + cred */}
+      <div style={{ flexShrink: 0, width: 100 }}>
+        <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#22d3ee', fontWeight: 'bold' }}>
+          {acc.handle}
+        </div>
+        <span
+          style={{
+            fontSize: 8, fontFamily: 'monospace', color: cat.color,
+            backgroundColor: cat.color + '15', border: `1px solid ${cat.color}30`,
+            borderRadius: 3, padding: '1px 4px', display: 'inline-block', marginTop: 3,
+          }}
+        >
+          {cat.label}
+        </span>
+      </div>
+
+      {/* Info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#888', marginBottom: 3 }}>
+          {acc.reason}
+        </div>
+        <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#555', fontStyle: 'italic' }}>
+          {acc.todays_signal}
+        </div>
+      </div>
+
+      {/* Credibility */}
+      <div style={{ flexShrink: 0 }}>
+        <CredDots score={acc.credibility} />
+      </div>
+    </div>
+  );
+}
+
+// ── Deep intel item ───────────────────────────────────────────────────────────
 
 function IntelItem({ item }: { item: IntelligenceItem }) {
   const urgColor = URGENCY_COLOR[item.urgency] ?? '#555';
-  const cat = CATEGORY_TAG[item.category] ?? { label: item.category, color: '#888' };
+  const cat = CAT[item.category] ?? { label: item.category, color: '#888' };
   const dirColor = DIR_COLOR[item.direction] ?? '#888';
 
   return (
@@ -66,154 +244,125 @@ function IntelItem({ item }: { item: IntelligenceItem }) {
       style={{
         borderLeft: `2px solid ${urgColor}`,
         borderBottom: '1px solid #0d0d0d',
-        padding: '10px 12px 10px 10px',
-        backgroundColor: urgColor + '08',
+        padding: '9px 12px 9px 10px',
+        backgroundColor: urgColor + '06',
       }}
     >
-      {/* Row 1: urgency + category + direction + lead time */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
-        <span
-          style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            fontWeight: 'bold',
-            color: urgColor,
-            letterSpacing: '0.06em',
-          }}
-        >
-          {URGENCY_LABEL[item.urgency]}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 9, fontFamily: 'monospace', fontWeight: 'bold', color: urgColor }}>
+          {URGENCY_PL[item.urgency]}
         </span>
-
         <span
           style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            color: cat.color,
-            backgroundColor: cat.color + '18',
-            border: `1px solid ${cat.color}40`,
-            borderRadius: 3,
-            padding: '1px 5px',
+            fontSize: 9, fontFamily: 'monospace', color: cat.color,
+            backgroundColor: cat.color + '18', border: `1px solid ${cat.color}40`,
+            borderRadius: 3, padding: '1px 5px',
           }}
         >
           {cat.label}
         </span>
-
         <span
           style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            fontWeight: 'bold',
-            color: dirColor,
-            backgroundColor: dirColor + '15',
-            border: `1px solid ${dirColor}40`,
-            borderRadius: 3,
-            padding: '1px 5px',
+            fontSize: 9, fontFamily: 'monospace', fontWeight: 'bold', color: dirColor,
+            backgroundColor: dirColor + '15', border: `1px solid ${dirColor}40`,
+            borderRadius: 3, padding: '1px 5px',
           }}
         >
           {item.direction}
         </span>
-
         <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#444', marginLeft: 'auto' }}>
           -{item.lead_time_hours}h MSM
         </span>
       </div>
 
-      {/* Row 2: summary (Polish) */}
-      <div
-        style={{
-          fontSize: 12,
-          fontFamily: 'monospace',
-          color: '#E8E8E0',
-          marginBottom: 5,
-          lineHeight: 1.4,
-        }}
-      >
+      <div style={{ fontSize: 12, fontFamily: 'monospace', color: '#E8E8E0', marginBottom: 4, lineHeight: 1.4 }}>
         {item.summary}
       </div>
-
-      {/* Row 3: signal detail */}
-      <div
-        style={{
-          fontSize: 10,
-          fontFamily: 'monospace',
-          color: '#666',
-          marginBottom: 6,
-          lineHeight: 1.4,
-        }}
-      >
+      <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#555', marginBottom: 6, lineHeight: 1.4 }}>
         {item.signal}
       </div>
 
-      {/* Row 4: market impact chips */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
-        {(item.market_impact ?? []).map((inst, i) => (
-          <span
-            key={i}
-            style={{
-              fontSize: 9,
-              fontFamily: 'monospace',
-              color: '#5DCAA5',
-              backgroundColor: '#5DCAA511',
-              border: '1px solid #5DCAA530',
-              borderRadius: 3,
-              padding: '1px 5px',
-            }}
-          >
-            {inst}
-          </span>
-        ))}
-      </div>
-
-      {/* Row 5: source + credibility */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#444' }}>
-          {item.source}
-        </span>
-        <CredibilityDots score={item.credibility} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <ImpactChips items={item.market_impact} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#333' }}>{item.source}</span>
+          <CredDots score={item.credibility} />
+        </div>
       </div>
     </div>
   );
 }
 
-// ── Feed container ────────────────────────────────────────────────────────────
+// ── Category legend ───────────────────────────────────────────────────────────
 
-const URGENCY_ORDER: Record<IntelUrgency, number> = { IMMEDIATE: 0, SOON: 1, WATCH: 2 };
-
-interface Props {
-  items: IntelligenceItem[];
+function Legend() {
+  return (
+    <div
+      style={{
+        display: 'flex', gap: 10, padding: '4px 12px',
+        backgroundColor: '#060606', borderBottom: '1px solid #0d0d0d',
+        overflowX: 'auto', scrollbarWidth: 'none',
+      }}
+    >
+      {Object.entries(CAT).map(([, val]) => (
+        <span
+          key={val.label}
+          style={{ fontSize: 8, fontFamily: 'monospace', color: val.color, whiteSpace: 'nowrap' }}
+        >
+          {val.label}
+        </span>
+      ))}
+    </div>
+  );
 }
 
-export default function IntelligenceFeed({ items }: Props) {
-  if (!items?.length) return null;
+// ── Main component ────────────────────────────────────────────────────────────
 
-  // Sort by urgency first, then credibility descending
-  const sorted = [...items].sort((a, b) => {
-    const uDiff = URGENCY_ORDER[a.urgency] - URGENCY_ORDER[b.urgency];
-    return uDiff !== 0 ? uDiff : b.credibility - a.credibility;
-  });
+interface Props {
+  items?: IntelligenceItem[];
+  breaking?: BreakingOsint[];
+  accounts?: IntelAccount[];
+}
 
-  const immediateCount = sorted.filter((i) => i.urgency === 'IMMEDIATE').length;
+export default function IntelligenceFeed({ items, breaking, accounts }: Props) {
+  const [showAccounts, setShowAccounts] = useState(false);
+
+  const hasBreaking = breaking && breaking.length > 0;
+  const hasItems    = items && items.length > 0;
+  const hasAccounts = accounts && accounts.length > 0;
+
+  if (!hasBreaking && !hasItems && !hasAccounts) return null;
+
+  const sortedBreaking = hasBreaking
+    ? [...breaking].sort((a, b) => URGENCY_ORDER[a.urgency] - URGENCY_ORDER[b.urgency])
+    : [];
+  const sortedItems = hasItems
+    ? [...items].sort((a, b) => {
+        const u = URGENCY_ORDER[a.urgency] - URGENCY_ORDER[b.urgency];
+        return u !== 0 ? u : b.credibility - a.credibility;
+      })
+    : [];
+
+  const immediateCount = [
+    ...sortedBreaking.filter((i) => i.urgency === 'IMMEDIATE'),
+    ...sortedItems.filter((i) => i.urgency === 'IMMEDIATE'),
+  ].length;
 
   return (
     <div style={{ borderBottom: '1px solid #1A1A1A' }}>
-      {/* Section header */}
+      {/* Master header */}
       <div
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '8px 12px 6px',
-          backgroundColor: '#060606',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '8px 12px 6px', backgroundColor: '#040404',
           borderBottom: '1px solid #111',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span
             style={{
-              fontSize: 9,
-              fontFamily: 'monospace',
+              fontSize: 9, fontFamily: 'monospace', fontWeight: 'bold',
               color: immediateCount > 0 ? '#D85A30' : '#888',
-              fontWeight: 'bold',
               letterSpacing: '0.12em',
             }}
           >
@@ -222,49 +371,76 @@ export default function IntelligenceFeed({ items }: Props) {
           {immediateCount > 0 && (
             <span
               style={{
-                fontSize: 9,
-                fontFamily: 'monospace',
-                color: '#D85A30',
-                backgroundColor: '#D85A3022',
-                border: '1px solid #D85A3044',
-                borderRadius: 3,
-                padding: '1px 5px',
-                animation: 'pulse-dot 1s ease-in-out infinite',
+                fontSize: 9, fontFamily: 'monospace', color: '#D85A30',
+                backgroundColor: '#D85A3022', border: '1px solid #D85A3044',
+                borderRadius: 3, padding: '1px 5px',
               }}
             >
-              {immediateCount} IMMEDIATE
+              {immediateCount} ⚡
             </span>
           )}
         </div>
         <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#333' }}>
-          {sorted.length} signal{sorted.length !== 1 ? 's' : ''}
+          {sortedBreaking.length + sortedItems.length} signals
         </span>
       </div>
 
-      {/* Legend row */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 12,
-          padding: '4px 12px',
-          backgroundColor: '#060606',
-          borderBottom: '1px solid #0d0d0d',
-        }}
-      >
-        {Object.entries(CATEGORY_TAG).map(([key, val]) => (
-          <span
-            key={key}
-            style={{ fontSize: 8, fontFamily: 'monospace', color: val.color, whiteSpace: 'nowrap' }}
-          >
-            {val.label}
-          </span>
-        ))}
-      </div>
+      <Legend />
 
-      {/* Items */}
-      {sorted.map((item, i) => (
-        <IntelItem key={i} item={item} />
-      ))}
+      {/* ── Section 1: Breaking OSINT (named accounts, last 2h) ─────────── */}
+      {hasBreaking && (
+        <>
+          <SectionHeader
+            title="BREAKING — VERIFIED ACCOUNTS (2H)"
+            count={sortedBreaking.length}
+            urgent={sortedBreaking.filter((i) => i.urgency === 'IMMEDIATE').length}
+            color="#D85A30"
+          />
+          {sortedBreaking.map((item, i) => (
+            <BreakingItem key={i} item={item} />
+          ))}
+        </>
+      )}
+
+      {/* ── Section 2: Deep intelligence analysis ───────────────────────── */}
+      {hasItems && (
+        <>
+          <SectionHeader
+            title="ANALIZA DEEP INTEL"
+            count={sortedItems.length}
+            urgent={sortedItems.filter((i) => i.urgency === 'IMMEDIATE').length}
+            color="#888"
+          />
+          {sortedItems.map((item, i) => (
+            <IntelItem key={i} item={item} />
+          ))}
+        </>
+      )}
+
+      {/* ── Section 3: Discovered accounts (collapsible) ─────────────────── */}
+      {hasAccounts && (
+        <>
+          <button
+            onClick={() => setShowAccounts((v) => !v)}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center',
+              justifyContent: 'space-between', padding: '7px 12px 5px',
+              backgroundColor: '#060606', borderBottom: '1px solid #111',
+              border: 'none', cursor: 'pointer',
+            }}
+          >
+            <span style={{ fontSize: 9, fontFamily: 'monospace', fontWeight: 'bold', color: '#22d3ee', letterSpacing: '0.1em' }}>
+              ODKRYTE KONTA — WARTO ŚLEDZIĆ
+            </span>
+            <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#333' }}>
+              {accounts.length}  {showAccounts ? '▲' : '▼'}
+            </span>
+          </button>
+          {showAccounts && accounts.map((acc, i) => (
+            <AccountCard key={i} acc={acc} />
+          ))}
+        </>
+      )}
     </div>
   );
 }
