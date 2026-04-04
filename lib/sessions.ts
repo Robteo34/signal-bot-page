@@ -150,12 +150,34 @@ export const SESSIONS: Record<SessionName, Session> = {
   },
 };
 
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** Returns "HH:MM BST" — time only, for compact displays */
 export function formatUKTime(now: Date = new Date()): string {
   const bst = isBST(now);
   const offset = bst ? 1 : 0;
   const h = ((now.getUTCHours() + offset) % 24 + 24) % 24;
   const m = now.getUTCMinutes();
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${bst ? 'BST' : 'GMT'}`;
+}
+
+/** Returns full date string: "Fri 04 Apr 2026" — always derived from live Date() */
+export function formatUKDate(now: Date = new Date()): string {
+  const bst = isBST(now);
+  // Shift UTC date to UK local date (BST +1 can push midnight into next day)
+  const ukMs = now.getTime() + (bst ? 3600_000 : 0);
+  const ukDate = new Date(ukMs);
+  const day = DAYS[ukDate.getUTCDay()];
+  const dd = ukDate.getUTCDate().toString().padStart(2, '0');
+  const mon = MONTHS[ukDate.getUTCMonth()];
+  const yyyy = ukDate.getUTCFullYear();
+  return `${day} ${dd} ${mon} ${yyyy}`;
+}
+
+/** Returns full date+time for AI prompts: "Fri 04 Apr 2026  10:42 BST" */
+export function formatUKDateTime(now: Date = new Date()): string {
+  return `${formatUKDate(now)}  ${formatUKTime(now)}`;
 }
 
 interface NextEvent {

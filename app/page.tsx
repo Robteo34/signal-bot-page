@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getCurrentSession, formatUKTime, getNextEvent, Session } from '@/lib/sessions';
+import { getCurrentSession, formatUKTime, formatUKDate, formatUKDateTime, getNextEvent, Session } from '@/lib/sessions';
 import { buildSystemPrompt, buildUserPrompt } from '@/lib/prompts';
 import { loadState, saveState, incrementVisitCount, AppState, ScanResult } from '@/lib/storage';
 
@@ -54,7 +54,9 @@ function timeSince(ms: number): string {
 
 export default function SignalBotApp() {
   const [session, setSession] = useState<Session | null>(null);
-  const [timeStr, setTimeStr] = useState('');
+  const [timeStr, setTimeStr] = useState('');   // HH:MM BST — for display
+  const [dateStr, setDateStr] = useState('');   // Fri 04 Apr 2026 — for display
+  const [dateTimeStr, setDateTimeStr] = useState(''); // full string for AI prompt
   const [nextEvent, setNextEvent] = useState({ label: '', minutes: 0 });
   const [screen, setScreen] = useState<Screen>('main');
   const [detailIndex, setDetailIndex] = useState(0);
@@ -89,6 +91,8 @@ export default function SignalBotApp() {
       const now = new Date();
       setSession(getCurrentSession(now));
       setTimeStr(formatUKTime(now));
+      setDateStr(formatUKDate(now));
+      setDateTimeStr(formatUKDateTime(now));
       setNextEvent(getNextEvent(now));
     }
     tick();
@@ -133,7 +137,7 @@ export default function SignalBotApp() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system: buildSystemPrompt(session.name, timeStr),
+          system: buildSystemPrompt(session.name, dateTimeStr),
           user: buildUserPrompt(session.name),
         }),
       });
@@ -169,7 +173,7 @@ export default function SignalBotApp() {
     } finally {
       setIsScanning(false);
     }
-  }, [session, timeStr, isScanning]);
+  }, [session, dateTimeStr, isScanning]);
 
   // ── Horizontal swipe for signal detail ─────────────────────────────────────
   function onTouchStart(e: React.TouchEvent) {
@@ -248,7 +252,7 @@ export default function SignalBotApp() {
       onTouchEnd={onTouchEnd}
     >
       {/* ── Fixed top ──────────────────────────────────────────────────────── */}
-      <SessionHeader session={session} timeStr={timeStr} nextEvent={nextEvent} />
+      <SessionHeader session={session} timeStr={timeStr} dateStr={dateStr} nextEvent={nextEvent} />
 
       {result.x_sentiment && <XSentimentStrip sentiment={result.x_sentiment} />}
       {result.macro_events_today?.length ? <MacroEventsStrip events={result.macro_events_today} /> : null}

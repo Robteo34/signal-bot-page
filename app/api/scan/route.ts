@@ -1,18 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
 export const maxDuration = 60;
 
-// Inject server-side UTC timestamp so AI always gets accurate time
-// regardless of client clock or timezone issues.
+// Accurate BST detection: last Sunday in March → last Sunday in October
+// Mirrors the logic in lib/sessions.ts — kept inline to avoid import issues in edge runtime.
+function isBSTAccurate(date: Date): boolean {
+  const year = date.getUTCFullYear();
+
+  const march = new Date(Date.UTC(year, 2, 31));
+  while (march.getUTCDay() !== 0) march.setUTCDate(march.getUTCDate() - 1);
+  march.setUTCHours(1, 0, 0, 0); // clocks go forward at 01:00 UTC
+
+  const october = new Date(Date.UTC(year, 9, 31));
+  while (october.getUTCDay() !== 0) october.setUTCDate(october.getUTCDate() - 1);
+  october.setUTCHours(1, 0, 0, 0); // clocks go back at 01:00 UTC
+
+  return date >= march && date < october;
+}
+
+// Build an unambiguous date/time block for the AI prompt.
+// Called fresh on every request — never cached, never hardcoded.
 function serverTimeContext(): string {
-  const now = new Date();
-  const utcStr = now.toUTCString();
-  // Approximate BST offset (UTC+1 Mar–Oct, UTC+0 otherwise)
-  const month = now.getUTCMonth(); // 0-indexed
-  const bst = month >= 2 && month <= 9; // Mar(2)–Oct(9)
-  const ukHour = (now.getUTCHours() + (bst ? 1 : 0)) % 24;
-  const ukMin = now.getUTCMinutes().toString().padStart(2, "0");
-  const tz = bst ? "BST" : "GMT";
-  return `[SERVER TIME] UTC: ${utcStr} | UK: ${ukHour}:${ukMin} ${tz}`;
+  const now = new Date(); // always live from JS runtime
+  const bst = isBSTAccurate(now);
+  const offsetMs = bst ? 3_600_000 : 0;
+
+  // Derive UK local date by shifting UTC epoch
+  const ukDate = new Date(now.getTime() + offsetMs);
+
+  const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+  const dayName  = DAYS[ukDate.getUTCDay()];
+  const day      = ukDate.getUTCDate();
+  const month    = MONTHS[ukDate.getUTCMonth()];
+  const year     = ukDate.getUTCFullYear();
+  const hh       = ukDate.getUTCHours().toString().padStart(2, "0");
+  const mm       = ukDate.getUTCMinutes().toString().padStart(2, "0");
+  const tz       = bst ? "BST (UTC+1)" : "GMT (UTC+0)";
+
+  return [
+    "╔═ CURRENT DATE & TIME (server-verified, live) ═╗",
+    `  Date     : ${dayName}, ${day} ${month} ${year}`,
+    `  UK Time  : ${hh}:${mm} ${tz}`,
+    `  UTC Time : ${now.toISOString()}`,
+    "╚════════════════════════════════════════════════╝",
+    "Use ONLY the date/time above. Do NOT use training-data dates.",
+  ].join("\n");
 }
 
 export async function POST(req: NextRequest) {
