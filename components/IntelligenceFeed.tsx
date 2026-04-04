@@ -20,8 +20,9 @@ const CATEGORY_TAG: Record<IntelCategory, { label: string; color: string }> = {
   MILITARY_OSINT:     { label: '⚔ MIL',  color: '#D85A30' },
   COMMODITY_PHYSICAL: { label: '⛽ COM',  color: '#EF9F27' },
   ESCALATION_LADDER:  { label: '▲ ESC',  color: '#c084fc' },
-  WHALE_INTEL:        { label: '◈ WHR',  color: '#378ADD' },
-  POLISH_CEE:         { label: '◆ CEE',  color: '#5DCAA5' },
+  FINANCIAL_OSINT:    { label: '◈ FIN',  color: '#378ADD' },
+  MACRO_LEADING:      { label: '◎ MAC',  color: '#5DCAA5' },
+  POLISH_CEE:         { label: '◆ CEE',  color: '#22d3ee' },
 };
 
 const DIR_COLOR: Record<string, string> = {

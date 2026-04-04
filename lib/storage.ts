@@ -53,7 +53,8 @@ export type IntelCategory =
   | 'MILITARY_OSINT'
   | 'COMMODITY_PHYSICAL'
   | 'ESCALATION_LADDER'
-  | 'WHALE_INTEL'
+  | 'FINANCIAL_OSINT'
+  | 'MACRO_LEADING'
   | 'POLISH_CEE';
 
 export type IntelUrgency = 'IMMEDIATE' | 'SOON' | 'WATCH';

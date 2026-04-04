@@ -101,66 +101,188 @@ Search X/Twitter for real-time market sentiment:
 6. Any trending financial/geopolitical hashtags right now
 Summarise as BULLISH / BEARISH / NEUTRAL per asset class with top 3 trending topics
 
-═══ ADVANCED INTELLIGENCE FEED — 5 CATEGORIES ═══
-Search X deeply for pre-market signals in each category below.
-Assign lead_time_hours = how many hours before this reaches mainstream financial media.
-Only include items with credibility >= 5 and genuine market relevance.
-Sort output array: IMMEDIATE first, then SOON, then WATCH.
+═══ ADVANCED INTELLIGENCE FEED — 6 CATEGORIES ═══
+Search X deeply for pre-market signals across all 6 categories.
+lead_time_hours = estimated hours before this signal reaches mainstream financial media.
+Only include items where credibility >= 5 AND there is clear IG-tradeable market impact.
+Return ALL significant findings. Sort: IMMEDIATE first, then SOON, then WATCH.
 
-── 1. MILITARY_OSINT ──────────────────────────────────────────────
-Search for: aircraft movement screenshots (ADS-B/FlightRadar unusual patterns),
-naval vessel repositioning (carrier groups, destroyers, submarines surfacing),
-ground unit deployment confirmations, base activity surges,
-resignation/removal of senior military/intelligence officials,
-unscheduled COBRA/NSC/emergency cabinet meetings,
-unusual SIGINT or satellite imagery discussions.
-Key X sources to check: #OSINT, #militaryOSINT, aviation/naval tracking accounts,
-defence ministry official channels, eastern Europe conflict trackers.
-Market impact: Oil (Brent/WTI), Gold, GBP/USD, USD/JPY, defence sector shares.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CATEGORY 1: MILITARY_OSINT — HIGHEST PRIORITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Signals to find:
+- Flightradar24 / ADS-B screenshots showing unusual aircraft movements:
+  military transports, tankers, ISR aircraft, unusual call signs,
+  fighter patrols activated, AWACS repositioning
+- Ship tracker data: carrier group movements, destroyer/submarine activity,
+  amphibious assault ships leaving port, coast guard escalations
+- Specific named military units + confirmed new locations
+  (e.g. "82nd Airborne deployed to X", "HMS X departed Y")
+- Photos/video from military bases showing unusual activity:
+  equipment loading, personnel movement, runway activity
+- Resignation or removal of senior military/intelligence officials
+  (Chiefs of Staff, SACEUR, NSA director, SecDef equivalent)
+- Unscheduled NSC/COBRA/Situation Room meetings called
+- Emergency DEFCON/readiness level changes discussed
 
-── 2. COMMODITY_PHYSICAL ──────────────────────────────────────────
-Search for: Brent vs WTI spread widening beyond $3 (paper vs physical divergence),
-tanker AIS tracking anomalies — Strait of Hormuz, Suez Canal, Panama Canal, Malacca Strait,
-pipeline incident reports (Nord Stream, Trans-Anatolian, Druzhba),
-refinery/LNG terminal unplanned shutdowns,
-SPR (Strategic Petroleum Reserve) drawdown or refill announcements,
-physical gold premium spikes (Shanghai vs London),
-copper/silver delivery failures at exchanges.
-Market impact: Brent Oil, WTI Oil, Natural Gas, Gold, Silver, GBP/USD.
+Account archetypes to search:
+  Military aviation trackers, naval movement accounts, #OSINT #militaryOSINT,
+  @OSINTtechnical type, @RALee85 type, @Archer83Actual type,
+  defence/security think tank accounts, conflict zone reporters,
+  Flightradar24 anomaly discussion threads
 
-── 3. ESCALATION_LADDER ───────────────────────────────────────────
-Search for: new maritime exclusion zones or NOTAM/NAVTEX navigational closures,
-bilateral trade settlements shifting to RMB/Rupee/Ruble (de-dollarisation moves),
-ambassador recalls or diplomat expulsions between major powers,
-explicit public deadlines issued by governments for military/political ultimatums,
-sanctions package announcements or expansions,
-emergency UN Security Council session calls,
-central bank emergency meetings outside scheduled dates.
-Market impact: USD/JPY, GBP/USD, EUR/USD, Gold, Oil, affected equity indices.
+IG INSTRUMENT TRIGGERS:
+  ▲ Oil (Brent/WTI): any Middle East / Hormuz activity
+  ▲ Gold: general escalation / safe haven demand
+  ▲ Defence shares (BAE, Rheinmetall, L3Harris via US indices)
+  ▼ Airlines (via SPX/Nasdaq sector): airspace closure risk
+  ▼ Shipping sector (via commodity indices): sea lane disruption
+  ▼ Risk assets generally: major escalation events
 
-── 4. WHALE_INTEL ─────────────────────────────────────────────────
-Search for: unusual options flow sweeps on indices/ETFs/commodities (size > $5M),
-dark pool block print alerts on major instruments,
-liquidation cascade alerts (positions $50M+ forced closed),
-large institutional position disclosure filings (13F, CFTC CoT surprises),
-major hedge fund position reveals via X posts or media leaks,
-VIX spike alerts and put/call ratio extremes,
-margin call waves reported in crypto or equity derivatives.
-Key X sources: @unusual_whales, @OptionsHawk, crypto liquidation trackers,
-institutional flow aggregators, prime broker report leaks.
-Market impact: SPX500, Nasdaq100, Brent Oil, Gold, BTC/USD.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CATEGORY 2: COMMODITY_PHYSICAL INTELLIGENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Signals to find:
+- Paper vs physical price divergence (Brent spot vs futures contango/backwardation,
+  Shanghai Gold Exchange premium vs LBMA, COMEX vs physical silver)
+- Strategic chokepoint shipping flow data:
+  Strait of Hormuz (Iran/Saudi tanker flow),
+  Suez Canal (Egyptian transit data, Houthi impact),
+  Panama Canal (drought/capacity restrictions),
+  Strait of Malacca (China/SE Asia flow)
+- Pipeline incidents: Nord Stream legacy, Trans-Anatolian (TANAP),
+  Druzhba pipeline, TAL pipeline, Kirkuk-Ceyhan disruptions
+- LNG/refinery unplanned shutdowns or force majeures
+- Port closures or terminal constraints (Rotterdam, Houston Ship Channel)
+- US/EU/China SPR release announcements or emergency draws
+- Tanker AIS anomalies: vessels going dark, unusual routing, bunching
 
-── 5. POLISH_CEE ──────────────────────────────────────────────────
-Search Polish-language X specifically — this network often has NATO/eastern-flank
-intelligence 12–48 hours before English-language media.
-Polish search terms: "wojsko", "NATO", "Rosja", "mobilizacja", "Ukraina", "granica",
-"Białoruś", "obrona", "alarm", "ćwiczenia", "Sojusz", "artykuł 5".
-Check: Polish Ministry of Defence official channels, Polish military analysts,
-CEE (Czech, Slovak, Hungarian, Romanian) defence community accounts,
-Baltic state (Estonia, Latvia, Lithuania) defence ministry posts.
-Any activation of Article 4/5 discussions, NATO reinforcement movements,
-Belarusian/Russian troop concentration reports near Polish/Baltic borders.
-Market impact: EUR/PLN (via EUR/USD proxy), Gold, Oil, DAX, defence shares.
+Account archetypes to search:
+  @KplerData type, @Vortexa_Energy type, @shiptracking accounts,
+  commodity macro analysts (@MilkRoadMacro type, @JuneGoh_Sparta type),
+  energy sector reporters, AIS/MarineTraffic discussion threads,
+  LNG market analysts, physical commodity traders posting flow data
+
+IG INSTRUMENT TRIGGERS:
+  ▲▼ Brent Oil / WTI Oil: any supply disruption signal
+  ▲ Natural Gas: LNG terminal/pipeline incident
+  ▲ Gold / Silver: physical vs paper divergence
+  ▼ Airlines: fuel cost spike signal
+  ▼ Chemical/fertiliser via commodity indices: gas price spike
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CATEGORY 3: GEOPOLITICAL ESCALATION LADDER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Signals to find:
+- New maritime exclusion zones declared, NOTAM/NAVTEX closures
+- Bilateral trade payment shifts to non-USD (CNY, Rupee, Ruble, crypto)
+  — especially for oil/gas/commodity contracts
+- Sanctions package announcements leaked before official release
+- Diplomat expulsions, ambassador recalls, consulate closures
+- Explicit political/military deadlines stated publicly
+  (e.g. "April 6 power-plant deadline", "72-hour ultimatum")
+- Emergency UN Security Council session called
+- Central bank emergency meetings outside scheduled dates
+- State media tone shifts (Xinhua, RT, TASS) indicating policy change
+
+IG INSTRUMENT TRIGGERS:
+  ▲▼ USD pairs (USD/JPY, GBP/USD, EUR/USD): flight to/from dollar
+  ▲ Gold: escalation / de-dollarisation signal
+  ▲▼ Emerging market currencies (via USD/JPY proxy)
+  ▲▼ Oil: sanctions on producers or route disruption
+  ▼ Risk equities: major escalation
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CATEGORY 4: FINANCIAL_OSINT — INSIDER SENTIMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Signals to find:
+- Large/known traders publicly revealing position setups before they move
+  (e.g. "@trader posts BTC long setup at $60k" — position signal)
+- Unusual options flow commentary: sweeps flagged by flow trackers
+  on specific tickers, ETFs, indices (size > $5M notional)
+- Hedge fund managers cited outside official channels:
+  conference remarks, podcast snippets, informal X posts
+- Dark pool print discussions on X before media coverage
+- Liquidation cascade alerts: crypto ($50M+), equity margin calls
+- CFTC Commitment of Traders surprise positioning discussed by analysts
+- VIX positioning extremes, put/call ratio spikes flagged by options desks
+- 13F filing surprises discussed on X before mainstream media
+
+Account archetypes to search:
+  @unusual_whales type, @OptionsHawk type, @unusual_options type,
+  institutional analysts who post on X, crypto liquidation trackers,
+  options flow aggregator accounts, macro fund managers on X
+
+IG INSTRUMENT TRIGGERS:
+  Instrument-specific based on what is flagged — could be any IG asset
+  ▲▼ SPX500 / Nasdaq100: large index options flow
+  ▲▼ Gold / Brent: commodity whale positioning
+  ▲▼ BTC/USD (crypto): large liquidation signal
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CATEGORY 5: MACRO_LEADING — FIRST-HAND LEADING INDICATORS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Signals to find:
+- Fed/Powell/FOMC members quoted verbatim on X BEFORE official transcript published
+  (often live-tweeted from events — 15-60 min lead time over mainstream)
+- PMI / NFP / CPI data discussed by analysts with early-access channel checks
+  BEFORE official release (supply chain posts, regional Fed contacts)
+- Earnings channel checks: supply chain companies posting demand signals
+  (e.g. TSMC subcontractor posts order data implying Apple demand)
+- Shipping/logistics data leading macro: Baltic Dry Index moves,
+  trucking spot rate shifts, port congestion data published on X
+- Real-time PMI proxy data: restaurant bookings, credit card spend,
+  jobless claims regional patterns discussed by analysts
+- Consumer confidence early reads from retail/hospitality sector accounts
+
+Account archetypes to search:
+  Macro economists on X, Fed watcher accounts, supply chain analysts,
+  regional business reporters, logistics data accounts,
+  earnings preview analysts with channel check history
+
+IG INSTRUMENT TRIGGERS:
+  ▲▼ GBP/USD, EUR/USD, USD/JPY: any Fed/central bank signal
+  ▲▼ SPX500 / Nasdaq100: earnings/macro surprise
+  ▲▼ Gold: inflation/Fed pivot signal
+  ▲▼ All major pairs: NFP/CPI surprise pre-signal
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CATEGORY 6: POLISH_CEE — STRATEGIC INTELLIGENCE NETWORK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+UNIQUE EDGE: Polish and CEE military/geopolitical analysts frequently publish
+NATO eastern-flank intelligence in Polish 12–48 hours before it appears in
+English-language media. This is a structural information asymmetry.
+
+Polish-language signals to find (search these exact terms):
+  "wojsko" (military), "NATO", "Rosja" (Russia), "mobilizacja" (mobilisation),
+  "Ukraina", "granica" (border), "Białoruś" (Belarus), "obrona" (defence),
+  "alarm" (alert), "ćwiczenia" (exercises), "Sojusz" (Alliance),
+  "artykuł 5" (Article 5), "wzmocnienie" (reinforcement),
+  "zgrupowanie" (grouping/concentration), "przegrupowanie" (repositioning)
+
+CEE network account archetypes to check:
+  @KapitanLisowski type (Polish military analysis),
+  @PISM_Poland type (Polish Institute for International Affairs),
+  Polish MON (Ministry of National Defence) official channels,
+  Czech/Slovak/Hungarian/Romanian defence ministry accounts,
+  Estonian/Latvian/Lithuanian defence ministry posts,
+  Polish think tank security analysts,
+  CEE investigative security journalists
+
+Specific signals:
+- Article 4 or Article 5 consultations being discussed
+- NATO reinforcement movements through Polish territory
+- Russian/Belarusian troop concentrations near Polish/Baltic borders
+- Polish government emergency security council meetings
+- CEE countries activating reserve units or civil defence
+- Infrastructure protection alerts (pipelines, bridges, energy)
+
+IG INSTRUMENT TRIGGERS:
+  ▲ Gold: any NATO Article 4/5 discussion
+  ▲ Oil: Eastern European pipeline/energy infrastructure risk
+  ▲▼ EUR/USD: European security risk premium
+  ▼ DAX / European indices: escalation risk
+  ▲ Defence shares: via SPX/Nasdaq defence sector
 
 ═══ SIGNAL STRENGTH 1–10 ═══
 9–10: Perfect storm, trade NOW  |  7–8: Strong, high conviction
@@ -242,7 +364,7 @@ Return ONLY this exact JSON — fill every field with real current analysis:
   "countdown_event": {"label":"next key market event","minutes":0},
   "intelligence_feed": [
     {
-      "category": "MILITARY_OSINT|COMMODITY_PHYSICAL|ESCALATION_LADDER|WHALE_INTEL|POLISH_CEE",
+      "category": "MILITARY_OSINT|COMMODITY_PHYSICAL|ESCALATION_LADDER|FINANCIAL_OSINT|MACRO_LEADING|POLISH_CEE",
       "signal": "specific description of what was found on X",
       "source": "@handle or outlet name",
       "credibility": 0,
