@@ -346,18 +346,23 @@ Return ONLY this exact JSON — fill every field with real current analysis:
     "key_tweet_insight": "najważniejsza informacja z X teraz max 12 słów"
   },
   "signals": [
-    {"asset":"FTSE100","direction":"LONG|SHORT|WAIT","strength":0,"entry":"","stop":"","target":"","reason":"max 7 słów","platform":"IG","overnight_risk":"HIGH|MEDIUM|LOW"},
-    {"asset":"SPX500","direction":"LONG|SHORT|WAIT","strength":0,"entry":"","stop":"","target":"","reason":"max 7 słów","platform":"IG","overnight_risk":"HIGH|MEDIUM|LOW"},
-    {"asset":"Nasdaq100","direction":"LONG|SHORT|WAIT","strength":0,"entry":"","stop":"","target":"","reason":"max 7 słów","platform":"IG","overnight_risk":"HIGH|MEDIUM|LOW"},
-    {"asset":"DAX","direction":"LONG|SHORT|WAIT","strength":0,"entry":"","stop":"","target":"","reason":"max 7 słów","platform":"IG","overnight_risk":"HIGH|MEDIUM|LOW"},
-    {"asset":"GBP/USD","direction":"LONG|SHORT|WAIT","strength":0,"entry":"","stop":"","target":"","reason":"max 7 słów","platform":"IG","overnight_risk":"HIGH|MEDIUM|LOW"},
-    {"asset":"GBP/JPY","direction":"LONG|SHORT|WAIT","strength":0,"entry":"","stop":"","target":"","reason":"max 7 słów","platform":"IG","overnight_risk":"HIGH|MEDIUM|LOW"},
-    {"asset":"EUR/USD","direction":"LONG|SHORT|WAIT","strength":0,"entry":"","stop":"","target":"","reason":"max 7 słów","platform":"IG","overnight_risk":"HIGH|MEDIUM|LOW"},
-    {"asset":"Gold","direction":"LONG|SHORT|WAIT","strength":0,"entry":"","stop":"","target":"","reason":"max 7 słów","platform":"IG","overnight_risk":"HIGH|MEDIUM|LOW"},
-    {"asset":"Brent Oil","direction":"LONG|SHORT|WAIT","strength":0,"entry":"","stop":"","target":"","reason":"max 7 słów","platform":"IG","overnight_risk":"HIGH|MEDIUM|LOW"},
-    {"asset":"BTC/USD","direction":"LONG|SHORT|WAIT","strength":0,"entry":"","stop":"","target":"","reason":"max 7 słów","platform":"CRYPTO","overnight_risk":"HIGH|MEDIUM|LOW"},
-    {"asset":"ETH/USD","direction":"LONG|SHORT|WAIT","strength":0,"entry":"","stop":"","target":"","reason":"max 7 słów","platform":"CRYPTO","overnight_risk":"HIGH|MEDIUM|LOW"}
+    {
+      "INSTRUCTION": "Return 3-8 signals. ONLY include assets where you found a real signal with strength >= 5. DO NOT fabricate signals for assets with no data. Skip any asset where you have no genuine setup.",
+      "asset": "instrument name matching IG universe",
+      "direction": "LONG|SHORT|WAIT",
+      "strength": 0,
+      "confidence_basis": "VERIFIED_SOURCE|MULTIPLE_SOURCES|INFERENCE|WEAK_DATA",
+      "entry": "specific price",
+      "stop": "specific stop loss",
+      "target": "take profit with R:R ratio",
+      "reason": "2-3 sentences in Polish explaining the setup",
+      "source": "@handle or data source that triggered this signal",
+      "platform": "IG|CRYPTO",
+      "overnight_risk": "HIGH|MEDIUM|LOW",
+      "session_relevant": true
+    }
   ],
+  "skipped_assets": ["assets from the IG universe with no actionable setup this session"],
   "top_shares": {
     "uk": [
       {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"","strength":0},

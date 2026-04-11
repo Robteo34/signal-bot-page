@@ -25,12 +25,15 @@ export interface ScanSignal {
   asset: string;
   direction: string;
   strength: number;
+  confidence_basis?: 'VERIFIED_SOURCE' | 'MULTIPLE_SOURCES' | 'INFERENCE' | 'WEAK_DATA';
   entry?: string;
   stop?: string;
   target?: string;
   reason: string;
+  source?: string;
   platform?: 'IG' | 'CRYPTO' | 'BOTH';
   overnight_risk?: 'HIGH' | 'MEDIUM' | 'LOW';
+  session_relevant?: boolean;
 }
 
 export interface ShareOpportunity {
@@ -105,6 +108,7 @@ export interface ScanResult {
   session_plan: string;
   wait_mode_reason?: string;
   signals: ScanSignal[];
+  skipped_assets?: string[];
   x_sentiment?: {
     overall: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
     trending_topics: string[];
