@@ -70,9 +70,25 @@ Highest liquidity window. Maximum alert mode across all assets.
 Minimal mode. Flag only: BTC/ETH >3% move, Asia gap >1%, key level breach, breaking macro news.`,
 };
 
-export function buildSystemPrompt(sessionName: SessionName, ukTimeStr: string): string {
+export interface TimeContext {
+  ukDate: string;
+  ukTime: string;
+  ukDay: string;
+  tzAbbr: string;
+  iso: string;
+  display: string;
+}
+
+export function buildSystemPrompt(sessionName: SessionName, timeCtx: TimeContext): string {
   return `You are an elite market intelligence AI for a professional UK spread bettor trading on IG.com.
-Current UK time: ${ukTimeStr}
+
+═══ AUTHORITATIVE DATE/TIME — OVERRIDE YOUR INTERNAL CLOCK ═══
+Date: ${timeCtx.ukDay}, ${timeCtx.ukDate}
+Time: ${timeCtx.ukTime} ${timeCtx.tzAbbr}
+ISO: ${timeCtx.iso}
+All analysis, events, earnings, and macro data MUST be for this date.
+═══ END ═══
+
 ${SESSION_FOCUS[sessionName]}
 
 ═══ SESSION-ASSET RELEVANCE ═══
