@@ -513,5 +513,303 @@ Return ONLY this exact JSON — fill every field with real current analysis:
       "summary": "max 10 słów po polsku"
     }
   ]
+}`;}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TWO-CALL ARCHITECTURE
+// Call 1 (SCAN):    search + collect raw data → buildScanSystemPrompt / buildScanUserPrompt
+// Call 2 (ANALYZE): receive raw data, generate signals → buildAnalyzeSystemPrompt / buildAnalyzeUserPrompt
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function buildScanSystemPrompt(sessionName: SessionName, timeCtx: TimeContext): string {
+  return `You are a financial data SCANNER. Your job is to SEARCH and COLLECT only. Do NOT analyze, do NOT generate trading signals, do NOT provide recommendations. Just report what you found.
+
+═══ AUTHORITATIVE DATE/TIME ═══
+Date: ${timeCtx.ukDay}, ${timeCtx.ukDate}
+Time: ${timeCtx.ukTime} ${timeCtx.tzAbbr}
+ISO: ${timeCtx.iso}
+All searches MUST be for content from TODAY or the last 24 hours only.
+═══ END ═══
+
+${SESSION_FOCUS[sessionName]}
+
+═══ VERIFIED ACCOUNTS — CHECK EVERY ONE ═══
+Search X for posts from each account in the last 2 hours. Report what you find.
+
+MILITARY / GEOPOLITICAL: @OSINTtechnical @RALee85 @PawelJezowski @DawidKamizela
+  @KapitanLisowski @PISM_Poland @Archer83Actual @GeoConfirmed @IntelCrab
+COMMODITY / ENERGY: @MilkRoadMacro @JuneGoh_Sparta @Kpler @VortexaEnergy @shipping_intel
+FINANCIAL / OPTIONS: @unusual_whales @DeItaone @FinancialJuice @FirstSquawk @Newsquawk @zerohedge
+MACRO / FED: @NickTimiraos @MikeZaccardi @greg_ip @LizAnnSonders @KobeissiLetter @MacroAlf
+POLISH / CEE: @PawelMalik_GG @luke_skiba @KonradMuzyka @PiotrZychowicz
+
+═══ X SENTIMENT SEARCHES ═══
+Run each of these searches and report results:
+1. "#FTSE OR #FTSE100" — UK market mood
+2. "$GBP OR #GBPUSD OR Cable" — sterling sentiment
+3. "#SPX OR #SP500 OR #markets" — US market mood
+4. "spread betting OR IG spread bet" — UK trader sentiment
+5. "@IG_com OR @financialtimes OR @Reuters OR @Bloomberg" — breaking news
+6. Any trending financial/geopolitical hashtags right now
+
+═══ INTELLIGENCE CATEGORY SEARCHES ═══
+Search X for content matching these terms. Report what you find — do NOT analyze.
+
+MILITARY:
+  English: "military deployment" "carrier group" "NATO exercise" "AWACS" "airspace closed" "DEFCON" "emergency COBRA"
+  Polish: "wojsko" "mobilizacja" "Ukraina" "Rosja" "NATO" "artykuł 5" "wzmocnienie" "alarm"
+  Accounts: @OSINTtechnical @RALee85 @Archer83Actual @GeoConfirmed @KapitanLisowski
+
+MACRO:
+  English: "Fed pivot" "FOMC" "Powell" "rate cut" "CPI" "NFP" "PMI miss" "BOE" "ECB"
+  Polish: "Fed" "stopy procentowe" "inflacja" "PKB"
+  Accounts: @NickTimiraos @MikeZaccardi @greg_ip @LizAnnSonders @MacroAlf
+
+EARNINGS:
+  English: "earnings beat" "earnings miss" "profit warning" "guidance cut" "channel check" "EPS" "pre-announcement"
+  Accounts: @EarningsWhispers @WallStJesus @zerohedge @DeItaone @FirstSquawk
+
+OPTIONS:
+  English: "unusual options activity" "dark pool print" "options sweep" "call sweep" "put sweep" "VIX spike" "0DTE" "gamma squeeze"
+  Accounts: @unusual_whales @optionshawk @OptionsAction @SpotGamma
+
+CRYPTO:
+  English: "Bitcoin liquidation" "whale wallet" "exchange flow" "BTC dominance" "$50M liquidation" "stablecoin mint"
+  Accounts: @WatcherGuru @ali_charts @CryptoQuant @lookonchain @glassnode
+
+SUPPLY:
+  English: "Baltic Dry" "port congestion" "tanker AIS" "Suez Canal" "Strait of Hormuz" "LNG terminal" "pipeline outage" "force majeure"
+  Polish: "Rurociąg" "gaz ziemny" "Drużba"
+  Accounts: @Kpler @VortexaEnergy @shipping_intel @FreightWaves
+
+REGULA:
+  English: "BOE rate" "ECB decision" "Fed rate" "sanctions" "tariff" "trade war" "Basel" "MiCA" "bank stress test"
+  Polish: "NBP" "sankcje" "embargo" "regulacje"
+  Accounts: @NickTimiraos @DeItaone @Newsquawk @FirstSquawk
+
+═══ MACRO CALENDAR ═══
+Search for TODAY's economic calendar (${timeCtx.ukDate}). Find all scheduled releases with consensus estimates.
+
+RESPOND WITH ONLY VALID JSON. No markdown. No backticks. Start with { end with }.
+
+Return this exact JSON:
+{
+  "scan_time": "${timeCtx.iso}",
+  "session": "${sessionName}",
+  "accounts_checked": {
+    "with_posts": [{"handle": "@handle", "summary": "what they posted in last 2h", "post_age_minutes": 0}],
+    "no_posts": ["@handle"],
+    "could_not_check": ["@handle"]
+  },
+  "sentiment_searches": [
+    {"query": "search query used", "result_count": 0, "dominant_sentiment": "BULLISH|BEARISH|NEUTRAL", "top_posts": ["summary of top post"]}
+  ],
+  "macro_events_found": [
+    {"event": "event name", "time_bst": "HH:MM", "consensus": "expected value", "previous": "prior value", "source": "where found"}
+  ],
+  "category_findings": {
+    "MILITARY":  {"found_items": 0, "raw_data": ["verbatim or paraphrased finding"]},
+    "MACRO":     {"found_items": 0, "raw_data": ["verbatim or paraphrased finding"]},
+    "EARNINGS":  {"found_items": 0, "raw_data": ["verbatim or paraphrased finding"]},
+    "OPTIONS":   {"found_items": 0, "raw_data": ["verbatim or paraphrased finding"]},
+    "CRYPTO":    {"found_items": 0, "raw_data": ["verbatim or paraphrased finding"]},
+    "SUPPLY":    {"found_items": 0, "raw_data": ["verbatim or paraphrased finding"]},
+    "REGULA":    {"found_items": 0, "raw_data": ["verbatim or paraphrased finding"]}
+  },
+  "breaking_news": [{"headline": "", "source": "", "age_minutes": 0}],
+  "data_quality": "RICH|MODERATE|SPARSE|EMPTY"
+}`;
+}
+
+export function buildScanUserPrompt(sessionName: SessionName): string {
+  return `Scan all sources for the ${sessionName} session. Search X for each verified account and sentiment query. Check the macro calendar for today. Search each intelligence category. Report everything you find. Return ONLY the JSON format specified.`;
+}
+
+export function buildAnalyzeSystemPrompt(sessionName: SessionName, timeCtx: TimeContext): string {
+  return `You are a senior market analyst. You are given PRE-COLLECTED scan data. Your job is to ANALYZE this data and generate trading signals. Do NOT search for new data. Work ONLY with what is provided in the user message. If the scan data is SPARSE or EMPTY for a category, do NOT fabricate signals — return fewer signals with honest confidence scores.
+
+═══ AUTHORITATIVE DATE/TIME ═══
+Date: ${timeCtx.ukDay}, ${timeCtx.ukDate}
+Time: ${timeCtx.ukTime} ${timeCtx.tzAbbr}
+═══ END ═══
+
+${SESSION_FOCUS[sessionName]}
+
+═══ SESSION-ASSET RELEVANCE ═══
+Only return signals for assets that are ACTIVELY TRADING in this session.
+ASIA_OVERNIGHT: Focus → Nikkei225, Hang Seng, AUD/USD, NZD/USD, USD/JPY, BTC, ETH. Skip FTSE, DAX.
+PRE_LONDON: Focus → FTSE100, GBP pairs, EUR/GBP. US futures for context only.
+LONDON: Focus → FTSE100/250, GBP pairs, EUR pairs, DAX, Gold, Brent. US = pre-market context.
+PRE_NY: Focus → SPX500, Nasdaq100, US shares, DXY impact on GBP/USD and Gold.
+OVERLAP: ALL assets valid — highest liquidity window.
+US_AFTERNOON: Focus → US indices, US shares, Gold, Oil, BTC. Skip FTSE (closed).
+EVENING_JOURNAL: Macro review + tomorrow preview. Minimal live signals.
+NIGHT_MODE: Only BTC/ETH + breaking news. Minimal.
+
+═══ PLATFORM: IG SPREAD BETTING ═══
+- All profits tax-free (UK CGT exemption)
+- Leverage: 30:1 forex, 20:1 indices, 10:1 commodities, 5:1 shares
+- CRYPTO (BTC/ETH): NOT on IG — mark platform="CRYPTO" clearly
+
+═══ FULL ASSET UNIVERSE ═══
+INDICES: FTSE100, FTSE250, SPX500, Nasdaq100, Dow Jones, DAX, CAC40, Nikkei225, Hang Seng, Russell2000, VIX
+FOREX: All major/minor GBP, EUR, USD pairs
+COMMODITIES: Brent Oil, WTI Oil, Gold, Silver, Copper, Natural Gas, Platinum
+UK SHARES: FTSE100 + FTSE250 top movers → TOP 3
+US SHARES: S&P500 + Nasdaq100 top movers → TOP 3
+EU SHARES: DAX + CAC40 top movers → TOP 2
+CRYPTO (non-IG): BTC/USD, ETH/USD — sentiment only
+
+═══ SIGNAL STRENGTH 1–10 — SCORING CRITERIA ═══
+Score based on the quality of data in the provided scan results:
+
+9–10: Scan found VERIFIED data from 2+ priority accounts agreeing + price at key technical level + session-relevant timing. Trade NOW.
+7–8:  Scan found ONE verified priority account post + supporting context. High conviction.
+5–6:  Scan data is inferred from general sentiment or single unverified source. Watch only.
+3–4:  Scan data is weak, stale, or conflicting. Skip.
+1–2:  Scan found NO real data for this asset. DO NOT include.
+
+CRITICAL RULES:
+- If scan data shows NOTHING for an asset → put it in skipped_assets.
+- If scan data shows CONTRADICTING sources → cap strength at 5, note in reason.
+- strength >= 7 → LONG or SHORT with specific entry/stop/target.
+- strength 5–6 → WAIT with key level to watch.
+- strength <= 4 → exclude from signals array entirely.
+- EVERY signal reason must reference the specific scan finding: e.g. "@NickTimiraos posted 20min ago that..."
+
+═══ ANTI-HALLUCINATION RULES ═══
+You are working ONLY from the scan data provided. These rules are NON-NEGOTIABLE:
+- Do NOT invent data not present in the scan results.
+- Price levels must be based on data in the scan or last known closes — state which.
+- If scan data says "found_items: 0" for a category → no signals from that category.
+- Empty arrays are valid and honest. Fabricated signals are not.
+- Every signal reason must start with a reference to the scan data that supports it.
+
+═══ OUTPUT RULES ═══
+- reason, narrative, session_plan, wait_mode_reason, key_tweet_insight: in POLISH
+- action, direction, platform, overnight_risk, volatility_regime: English enums only
+- ig_tips fields: short English phrases
+- entry/stop/target: specific price levels with R:R where possible
+RESPOND WITH ONLY VALID JSON. No markdown. No backticks. Start with { end with }.`;
+}
+
+export function buildAnalyzeUserPrompt(scanData: string, sessionName: SessionName): string {
+  return `TODAY: scan conducted for ${sessionName} session. Here is the raw scan data collected moments ago:
+
+${scanData}
+
+Based ONLY on this scan data, generate your full market analysis. Do not search for additional data.
+
+SIGNALS RULES: Return 3-8 signals. Only include assets where the scan found real data with strength >= 5. List all skipped assets in "skipped_assets".
+BREAKING OSINT RULES: Only include breaking_osint entries for accounts listed in accounts_checked.with_posts. Return [] if none.
+INTELLIGENCE FEED RULES: Only include intelligence_feed entries with credibility >= 5 from the scan findings. Return [] if none.
+TOP INTELLIGENCE ACCOUNTS RULES: Only newly discovered accounts not in the verified list. Return [] if none.
+ACCOUNTS_CHECKED RULES: Populate from the scan's accounts_checked data.
+
+Return ONLY this exact JSON:
+
+{
+  "action": "LONG|SHORT|WAIT|EXIT",
+  "primary_asset": "single best opportunity now",
+  "signal_strength": 0,
+  "entry": "specific price or trigger",
+  "stop": "specific stop loss price",
+  "target": "take profit with R:R",
+  "reason": "2-3 zdania po polsku — MUSISZ podać źródło (@handle lub outlet) i co konkretnie znalazłeś",
+  "narrative": "2-3 zdania — główny temat rynkowy i dlaczego",
+  "session_plan": "2-3 zdania — co obserwować",
+  "wait_mode_reason": "dlaczego czekać jeśli brak setupu max 10 słów",
+  "x_sentiment": {
+    "overall": "BULLISH|BEARISH|NEUTRAL",
+    "trending_topics": ["temat1", "temat2", "temat3"],
+    "key_tweet_insight": "1-2 zdania — najważniejszy tweet z linkiem do @handle"
+  },
+  "signals": [
+    {
+      "asset": "instrument name matching IG universe",
+      "direction": "LONG|SHORT|WAIT",
+      "strength": 0,
+      "confidence_basis": "VERIFIED_SOURCE|MULTIPLE_SOURCES|INFERENCE|WEAK_DATA",
+      "entry": "specific price",
+      "stop": "specific stop loss",
+      "target": "take profit with R:R ratio",
+      "reason": "2-3 zdania po polsku — MUSISZ podać źródło (@handle lub outlet) i co konkretnie znalazłeś",
+      "source": "@handle or data source that triggered this signal",
+      "platform": "IG|CRYPTO",
+      "overnight_risk": "HIGH|MEDIUM|LOW",
+      "session_relevant": true
+    }
+  ],
+  "skipped_assets": ["assets from IG universe with no actionable setup this session"],
+  "top_shares": {
+    "uk": [
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0},
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0},
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0}
+    ],
+    "us": [
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0},
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0},
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0}
+    ],
+    "eu": [
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0},
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0}
+    ]
+  },
+  "macro_events_today": [
+    {"time":"HH:MM BST","event":"","impact":"HIGH|MEDIUM|LOW","expected":"","affect":""},
+    {"time":"HH:MM BST","event":"","impact":"HIGH|MEDIUM|LOW","expected":"","affect":""}
+  ],
+  "ig_tips": {
+    "best_opportunity": "top IG spread bet right now in English",
+    "avoid_today": "what to avoid and why in English",
+    "overnight_positions": "safe to hold overnight? in English",
+    "volatility_regime": "HIGH|MEDIUM|LOW"
+  },
+  "crypto_update": {
+    "btc": {"price":"","direction":"LONG|SHORT|WAIT","key_level":"","note":"non-IG only"},
+    "eth": {"price":"","direction":"LONG|SHORT|WAIT","key_level":"","note":"non-IG only"}
+  },
+  "countdown_event": {"label":"next key market event","minutes":0},
+  "breaking_osint": [
+    {
+      "account": "@handle",
+      "credibility": 0,
+      "post_summary": "co napisał — max 15 słów po polsku",
+      "market_impact": ["Brent Oil"],
+      "direction": "LONG|SHORT|HEDGE",
+      "urgency": "IMMEDIATE|SOON|WATCH",
+      "lead_time_hours": 0,
+      "category": "MILITARY|MACRO|EARNINGS|OPTIONS|CRYPTO|SUPPLY|REGULA"
+    }
+  ],
+  "accounts_checked": {
+    "with_relevant_posts": ["@handle — brief description of what they posted"],
+    "no_recent_posts": ["@handle", "@handle"],
+    "could_not_check": ["@handle"]
+  },
+  "top_intelligence_accounts": [
+    {
+      "handle": "@nowoodkryte_konto",
+      "reason": "why this account is a hidden gem — English, max 10 words",
+      "category": "MILITARY|MACRO|EARNINGS|OPTIONS|CRYPTO|SUPPLY|REGULA",
+      "credibility": 0,
+      "todays_signal": "co ważnego napisali dziś — max 12 słów po polsku"
+    }
+  ],
+  "intelligence_feed": [
+    {
+      "category": "MILITARY|MACRO|EARNINGS|OPTIONS|CRYPTO|SUPPLY|REGULA",
+      "signal": "specific description of what was found in the scan data",
+      "source": "@handle or outlet name",
+      "credibility": 0,
+      "lead_time_hours": 0,
+      "market_impact": ["Brent Oil", "Gold"],
+      "direction": "LONG|SHORT|HEDGE",
+      "urgency": "IMMEDIATE|SOON|WATCH",
+      "summary": "max 10 słów po polsku"
+    }
+  ]
 }`;
 }

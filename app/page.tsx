@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getCurrentSession, formatUKTime, formatUKDate, formatUKDateTime, getNextEvent, Session } from '@/lib/sessions';
-import { buildSystemPrompt, buildUserPrompt, type TimeContext } from '@/lib/prompts';
+import { getCurrentSession, formatUKTime, formatUKDate, getNextEvent, Session } from '@/lib/sessions';
 import { loadState, saveState, incrementVisitCount, AppState, ScanResult } from '@/lib/storage';
 
 import SessionHeader from '@/components/SessionHeader';
@@ -57,7 +56,6 @@ export default function SignalBotApp() {
   const [session, setSession] = useState<Session | null>(null);
   const [timeStr, setTimeStr] = useState('');   // HH:MM BST — for display
   const [dateStr, setDateStr] = useState('');   // Fri 04 Apr 2026 — for display
-  const [timeCtx, setTimeCtx] = useState<TimeContext | null>(null); // full context for AI prompt
   const [nextEvent, setNextEvent] = useState({ label: '', minutes: 0 });
   const [screen, setScreen] = useState<Screen>('main');
   const [detailIndex, setDetailIndex] = useState(0);
@@ -93,23 +91,6 @@ export default function SignalBotApp() {
       setSession(getCurrentSession(now));
       setTimeStr(formatUKTime(now));
       setDateStr(formatUKDate(now));
-      const ukFormatter = new Intl.DateTimeFormat('en-GB', {
-        timeZone: 'Europe/London',
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit',
-        hour12: false, weekday: 'long',
-      });
-      const pts = ukFormatter.formatToParts(now);
-      const gp = (t: string) => pts.find(p => p.type === t)?.value ?? '';
-      const tzAbbr = now.toLocaleString('en-GB', { timeZone: 'Europe/London', timeZoneName: 'short' }).includes('BST') ? 'BST' : 'GMT';
-      setTimeCtx({
-        ukDate:  `${gp('year')}-${gp('month')}-${gp('day')}`,
-        ukTime:  `${gp('hour')}:${gp('minute')}`,
-        ukDay:   gp('weekday'),
-        tzAbbr,
-        iso:     now.toISOString(),
-        display: `${gp('weekday')}, ${gp('day')}/${gp('month')}/${gp('year')} ${gp('hour')}:${gp('minute')} ${tzAbbr}`,
-      });
       setNextEvent(getNextEvent(now));
     }
     tick();
@@ -146,17 +127,14 @@ export default function SignalBotApp() {
 
   // ── AI Scan ─────────────────────────────────────────────────────────────────
   const runScan = useCallback(async () => {
-    if (!session || isScanning || !timeCtx) return;
+    if (!session || isScanning) return;
     setIsScanning(true);
     setScanError(null);
     try {
       const res = await fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system: buildSystemPrompt(session.name, timeCtx),
-          user: buildUserPrompt(session.name),
-        }),
+        body: JSON.stringify({ sessionName: session.name }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? `Error ${res.status}`);
@@ -190,7 +168,7 @@ export default function SignalBotApp() {
     } finally {
       setIsScanning(false);
     }
-  }, [session, timeCtx, isScanning]);
+  }, [session, isScanning]);
 
   // ── Horizontal swipe for signal detail ─────────────────────────────────────
   function onTouchStart(e: React.TouchEvent) {

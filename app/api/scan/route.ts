@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-export const maxDuration = 60;
+import type { SessionName } from "@/lib/sessions";
+import {
+  buildScanSystemPrompt,
+  buildScanUserPrompt,
+  buildAnalyzeSystemPrompt,
+  buildAnalyzeUserPrompt,
+  type TimeContext,
+} from "@/lib/prompts";
 
-function buildTimeContext() {
+export const maxDuration = 120;
+
+function buildTimeContext(): TimeContext {
   const now = new Date();
 
-  // Force UK timezone — never rely on server timezone
   const ukFormatter = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/London',
     year: 'numeric',
@@ -24,7 +32,6 @@ function buildTimeContext() {
   const ukTime = `${get('hour')}:${get('minute')}`;
   const ukDay  = get('weekday');
 
-  // Detect BST vs GMT from the formatted string
   const ukOffset = now.toLocaleString('en-GB', { timeZone: 'Europe/London', timeZoneName: 'short' });
   const tzAbbr = ukOffset.includes('BST') ? 'BST' : 'GMT';
 
@@ -38,60 +45,127 @@ function buildTimeContext() {
   };
 }
 
+function extractJson(raw: string): string {
+  const start = raw.indexOf('{');
+  const end   = raw.lastIndexOf('}');
+  if (start === -1 || end === -1) throw new Error('No JSON object found in response');
+  return raw.slice(start, end + 1);
+}
+
+const XAI_URL = "https://api.x.ai/v1/chat/completions";
+
+function xaiHeaders() {
+  return {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${process.env.XAI_API_KEY}`,
+  };
+}
+
 export async function POST(req: NextRequest) {
+  const totalStart = Date.now();
+
   try {
     const body = await req.json();
+    const sessionName = body.sessionName as SessionName;
 
-    const time = buildTimeContext();
-    const timeBlock = [
-      "═══ CURRENT DATE AND TIME — USE THIS, NOT YOUR OWN CLOCK ═══",
-      `TODAY IS: ${time.ukDay}, ${time.ukDate}`,
-      `UK TIME NOW: ${time.ukTime} ${time.tzAbbr}`,
-      `ISO: ${time.iso}`,
-      "THIS IS AUTHORITATIVE. Do not use any other date.",
-      "═══ END TIME BLOCK ═══",
-    ].join("\n");
+    if (!sessionName) {
+      return NextResponse.json({ error: "sessionName is required" }, { status: 400 });
+    }
 
-    // Prepend today's date to the user prompt so it appears in BOTH system and user turns
-    const userContent = `TODAY IS ${time.ukDay.toUpperCase()}, ${time.ukDate} — ${time.ukTime} ${time.tzAbbr}\n\n${body.user}`;
+    const timeCtx = buildTimeContext();
+    const JSON_ONLY = "RESPOND WITH ONLY VALID JSON. No markdown fences. No backticks. No text before { or after }.";
 
-    const systemContent = [
-      timeBlock,
-      body.system,
-      "RESPOND WITH ONLY VALID JSON. No markdown fences. No backticks. No text before { or after }.",
-    ].join("\n\n");
+    // ── Call 1: SCAN ────────────────────────────────────────────────────────────
+    // Purpose: web search + data collection. Returns raw findings JSON.
+    const scanStart = Date.now();
 
-    const res = await fetch("https://api.x.ai/v1/chat/completions", {
+    const scanRes = await fetch(XAI_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.XAI_API_KEY}`,
-      },
+      headers: xaiHeaders(),
+      body: JSON.stringify({
+        model: "grok-4-1-fast",
+        max_tokens: 4000,
+        temperature: 0.1, // low temp for factual reporting
+        messages: [
+          {
+            role: "system",
+            content: [buildScanSystemPrompt(sessionName, timeCtx), JSON_ONLY].join("\n\n"),
+          },
+          {
+            role: "user",
+            content: buildScanUserPrompt(sessionName),
+          },
+        ],
+      }),
+    });
+
+    const scanDuration = Date.now() - scanStart;
+
+    const scanData = await scanRes.json();
+    console.log("SCAN STATUS:", scanRes.status);
+    console.log("SCAN RESPONSE:", JSON.stringify(scanData).slice(0, 400));
+
+    if (!scanRes.ok) {
+      const errMsg = scanData.error?.message ?? `xAI scan error ${scanRes.status}`;
+      return NextResponse.json({ error: errMsg }, { status: scanRes.status });
+    }
+
+    const scanRawText: string = scanData.choices?.[0]?.message?.content ?? "{}";
+
+    // Parse and re-stringify so the analyze call gets clean formatted JSON
+    let scanPayload: string;
+    try {
+      scanPayload = JSON.stringify(JSON.parse(extractJson(scanRawText)), null, 2);
+    } catch {
+      // If scan JSON is malformed, pass raw text — analyze can still work with partial data
+      scanPayload = scanRawText;
+    }
+
+    // ── Call 2: ANALYZE ─────────────────────────────────────────────────────────
+    // Purpose: receive scan data, generate trading signals. No web search needed.
+    const analyzeStart = Date.now();
+
+    const analyzeRes = await fetch(XAI_URL, {
+      method: "POST",
+      headers: xaiHeaders(),
       body: JSON.stringify({
         model: "grok-4-1-fast",
         max_tokens: 6000,
         temperature: 0.3,
         messages: [
-          { role: "system", content: systemContent },
-          { role: "user",   content: userContent },
+          {
+            role: "system",
+            content: [buildAnalyzeSystemPrompt(sessionName, timeCtx), JSON_ONLY].join("\n\n"),
+          },
+          {
+            role: "user",
+            content: buildAnalyzeUserPrompt(scanPayload, sessionName),
+          },
         ],
       }),
     });
 
-    const data = await res.json();
-    console.log("XAI STATUS:", res.status);
-    console.log("XAI RESPONSE:", JSON.stringify(data).slice(0, 800));
+    const analyzeDuration = Date.now() - analyzeStart;
+    const totalDuration   = Date.now() - totalStart;
 
-    if (!res.ok) {
-      const errMsg = data.error?.message ?? `xAI error ${res.status}`;
-      return NextResponse.json({ error: errMsg }, { status: res.status });
+    console.log(`SCAN call: ${scanDuration}ms | ANALYZE call: ${analyzeDuration}ms | Total: ${totalDuration}ms`);
+
+    const analyzeData = await analyzeRes.json();
+    console.log("ANALYZE STATUS:", analyzeRes.status);
+    console.log("ANALYZE RESPONSE:", JSON.stringify(analyzeData).slice(0, 400));
+
+    if (!analyzeRes.ok) {
+      const errMsg = analyzeData.error?.message ?? `xAI analyze error ${analyzeRes.status}`;
+      return NextResponse.json({ error: errMsg }, { status: analyzeRes.status });
     }
 
-    // Normalise to { content: [{ type: "text", text: "..." }] }
-    const text: string = data.choices?.[0]?.message?.content ?? "";
+    // Normalise to { content: [{ type: "text", text: "..." }] } — unchanged from before
+    const text: string = analyzeData.choices?.[0]?.message?.content ?? "";
     return NextResponse.json({ content: [{ type: "text", text }] });
+
   } catch (e: any) {
-    console.log("ERROR:", e.message);
+    const totalDuration = Date.now() - totalStart;
+    console.log(`ERROR after ${totalDuration}ms:`, e.message);
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
