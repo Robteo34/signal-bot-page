@@ -564,6 +564,8 @@ Run each of these searches and report results:
 4. "spread betting OR IG spread bet" — UK trader sentiment
 5. "@IG_com OR @financialtimes OR @Reuters OR @Bloomberg" — breaking news
 6. Any trending financial/geopolitical hashtags right now
+7. "#silver OR #copper OR #natgas OR #platinum" — metals and energy sentiment
+8. "FTSE unusual volume OR FTSE breakout OR RNS" — UK share scanner
 
 ═══ INTELLIGENCE CATEGORY SEARCHES ═══
 Search X for content matching these terms. Report what you find — do NOT analyze.
@@ -685,6 +687,15 @@ UK SHARES: FTSE100 + FTSE250 top movers → TOP 3
 US SHARES: S&P500 + Nasdaq100 top movers → TOP 3
 EU SHARES: DAX + CAC40 top movers → TOP 2
 CRYPTO (non-IG): BTC/USD, ETH/USD — sentiment only
+
+═══ MANDATORY COVERAGE RULES ═══
+You MUST scan and report on these assets EVERY session (even if WAIT):
+- COMMODITIES: Gold AND Silver AND Brent Oil — always all three. Also check: Copper, Natural Gas, Platinum — include if any movement or news.
+- UK SHARES: You MUST return at minimum 2 UK shares in top_shares.uk. Scan FTSE100 + FTSE250 for: unusual volume, 52-week highs/lows, RNS announcements, broker upgrades/downgrades, sector momentum. 'Brak okazji' is NOT acceptable — there are always shares moving. If nothing is breaking out, report the highest-volume FTSE100 movers today with direction WAIT.
+- US SHARES: You MUST return at minimum 2 US shares in top_shares.us. Scan S&P500 + Nasdaq100 for: pre/post-market movers, earnings reactions, analyst actions, unusual options activity. Same rule — never return empty.
+- EU SHARES: Return at minimum 1 EU share from DAX or CAC40.
+
+If you genuinely cannot find data for a share (e.g. weekend, market closed), return the share with direction WAIT, strength 1, and reason 'Rynek zamknięty — brak danych'.
 
 ═══ SIGNAL STRENGTH 1–10 — SCORING CRITERIA ═══
 Score based on the quality of data in the provided scan results:
