@@ -1,59 +1,62 @@
 import { NextRequest, NextResponse } from "next/server";
 export const maxDuration = 60;
 
-// Accurate BST detection: last Sunday in March → last Sunday in October
-// Mirrors the logic in lib/sessions.ts — kept inline to avoid import issues in edge runtime.
-function isBSTAccurate(date: Date): boolean {
-  const year = date.getUTCFullYear();
+function buildTimeContext() {
+  const now = new Date();
 
-  const march = new Date(Date.UTC(year, 2, 31));
-  while (march.getUTCDay() !== 0) march.setUTCDate(march.getUTCDate() - 1);
-  march.setUTCHours(1, 0, 0, 0); // clocks go forward at 01:00 UTC
+  // Force UK timezone — never rely on server timezone
+  const ukFormatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    weekday: 'long',
+  });
 
-  const october = new Date(Date.UTC(year, 9, 31));
-  while (october.getUTCDay() !== 0) october.setUTCDate(october.getUTCDate() - 1);
-  october.setUTCHours(1, 0, 0, 0); // clocks go back at 01:00 UTC
+  const parts = ukFormatter.formatToParts(now);
+  const get = (type: string) => parts.find(p => p.type === type)?.value ?? '';
 
-  return date >= march && date < october;
-}
+  const ukDate = `${get('year')}-${get('month')}-${get('day')}`;
+  const ukTime = `${get('hour')}:${get('minute')}`;
+  const ukDay  = get('weekday');
 
-// Build an unambiguous date/time block for the AI prompt.
-// Called fresh on every request — never cached, never hardcoded.
-function serverTimeContext(): string {
-  const now = new Date(); // always live from JS runtime
-  const bst = isBSTAccurate(now);
-  const offsetMs = bst ? 3_600_000 : 0;
+  // Detect BST vs GMT from the formatted string
+  const ukOffset = now.toLocaleString('en-GB', { timeZone: 'Europe/London', timeZoneName: 'short' });
+  const tzAbbr = ukOffset.includes('BST') ? 'BST' : 'GMT';
 
-  // Derive UK local date by shifting UTC epoch
-  const ukDate = new Date(now.getTime() + offsetMs);
-
-  const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-
-  const dayName  = DAYS[ukDate.getUTCDay()];
-  const day      = ukDate.getUTCDate();
-  const month    = MONTHS[ukDate.getUTCMonth()];
-  const year     = ukDate.getUTCFullYear();
-  const hh       = ukDate.getUTCHours().toString().padStart(2, "0");
-  const mm       = ukDate.getUTCMinutes().toString().padStart(2, "0");
-  const tz       = bst ? "BST (UTC+1)" : "GMT (UTC+0)";
-
-  return [
-    "╔═ CURRENT DATE & TIME (server-verified, live) ═╗",
-    `  Date     : ${dayName}, ${day} ${month} ${year}`,
-    `  UK Time  : ${hh}:${mm} ${tz}`,
-    `  UTC Time : ${now.toISOString()}`,
-    "╚════════════════════════════════════════════════╝",
-    "Use ONLY the date/time above. Do NOT use training-data dates.",
-  ].join("\n");
+  return {
+    iso:     now.toISOString(),
+    ukDate,
+    ukTime,
+    ukDay,
+    tzAbbr,
+    display: `${ukDay}, ${get('day')}/${get('month')}/${get('year')} ${ukTime} ${tzAbbr}`,
+  };
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
+    const time = buildTimeContext();
+    const timeBlock = [
+      "═══ CURRENT DATE AND TIME — USE THIS, NOT YOUR OWN CLOCK ═══",
+      `TODAY IS: ${time.ukDay}, ${time.ukDate}`,
+      `UK TIME NOW: ${time.ukTime} ${time.tzAbbr}`,
+      `ISO: ${time.iso}`,
+      "THIS IS AUTHORITATIVE. Do not use any other date.",
+      "═══ END TIME BLOCK ═══",
+    ].join("\n");
+
+    // Prepend today's date to the user prompt so it appears in BOTH system and user turns
+    const userContent = `TODAY IS ${time.ukDay.toUpperCase()}, ${time.ukDate} — ${time.ukTime} ${time.tzAbbr}\n\n${body.user}`;
+
     const systemContent = [
-      serverTimeContext(),
+      timeBlock,
       body.system,
       "RESPOND WITH ONLY VALID JSON. No markdown fences. No backticks. No text before { or after }.",
     ].join("\n\n");
@@ -67,10 +70,10 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: "grok-4-1-fast",
         max_tokens: 6000,
-        temperature: 0.3, // lower = more consistent JSON output
+        temperature: 0.3,
         messages: [
           { role: "system", content: systemContent },
-          { role: "user", content: body.user },
+          { role: "user",   content: userContent },
         ],
       }),
     });
@@ -85,7 +88,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Normalise to { content: [{ type: "text", text: "..." }] }
-    // so page.tsx response parsing needs no changes
     const text: string = data.choices?.[0]?.message?.content ?? "";
     return NextResponse.json({ content: [{ type: "text", text }] });
   } catch (e: any) {
