@@ -7,6 +7,7 @@ import {
   buildAnalyzeUserPrompt,
   type TimeContext,
 } from "@/lib/prompts";
+import { supabase } from "@/lib/supabase";
 
 export const maxDuration = 120;
 
@@ -52,6 +53,115 @@ function extractJson(raw: string): string {
   return raw.slice(start, end + 1);
 }
 
+// ── Supabase persistence ──────────────────────────────────────────────────────
+// Fire-and-forget — DB errors must never block the response to the client.
+
+async function saveToDb(params: {
+  sessionName: SessionName;
+  timeCtx: TimeContext;
+  rawScan: unknown;
+  rawAnalysis: unknown;
+  scanDurationMs: number;
+  analyzeeDurationMs: number;
+  totalDurationMs: number;
+}) {
+  const { sessionName, timeCtx, rawScan, rawAnalysis, scanDurationMs, analyzeeDurationMs, totalDurationMs } = params;
+
+  const analysis = rawAnalysis as Record<string, any>;
+  const scan     = rawScan     as Record<string, any>;
+
+  // 1. Insert scan row
+  const { data: scanRow, error: scanErr } = await supabase
+    .from('scans')
+    .insert({
+      session_name:        sessionName,
+      uk_date:             timeCtx.ukDate,
+      uk_time:             timeCtx.ukTime,
+      tz_abbr:             timeCtx.tzAbbr,
+      action:              analysis.action        ?? null,
+      primary_asset:       analysis.primary_asset ?? null,
+      signal_strength:     analysis.signal_strength ?? null,
+      data_quality:        scan.data_quality      ?? null,
+      scan_duration_ms:    scanDurationMs,
+      analyze_duration_ms: analyzeeDurationMs,
+      total_duration_ms:   totalDurationMs,
+      raw_scan:            rawScan,
+      raw_analysis:        rawAnalysis,
+    })
+    .select('id')
+    .single();
+
+  if (scanErr) {
+    console.error('DB scans insert error:', scanErr.message);
+    return;
+  }
+
+  const scanId = scanRow.id as string;
+
+  // 2. Insert individual signals
+  const signals: any[] = analysis.signals ?? [];
+  if (signals.length > 0) {
+    const signalRows = signals.map((s) => ({
+      scan_id:          scanId,
+      asset:            s.asset            ?? null,
+      direction:        s.direction        ?? null,
+      strength:         s.strength         ?? null,
+      confidence_basis: s.confidence_basis ?? null,
+      platform:         s.platform         ?? null,
+      source:           s.source           ?? null,
+      reason:           s.reason           ?? null,
+      entry:            s.entry            ?? null,
+      stop:             s.stop             ?? null,
+      target:           s.target           ?? null,
+      overnight_risk:   s.overnight_risk   ?? null,
+      session_relevant: s.session_relevant ?? null,
+    }));
+
+    const { error: sigErr } = await supabase.from('signals').insert(signalRows);
+    if (sigErr) console.error('DB signals insert error:', sigErr.message);
+  }
+
+  // 3. Insert source_scores from accounts_checked
+  // Prefer analysis accounts_checked; fall back to scan accounts_checked
+  const checked = analysis.accounts_checked ?? scan.accounts_checked ?? {};
+  const sourceRows: any[] = [];
+
+  // Collect which handles were cited as source in actual signals
+  const citedHandles = new Set(
+    signals.map((s) => (s.source ?? '').toLowerCase()).filter(Boolean)
+  );
+
+  for (const item of (checked.with_relevant_posts ?? checked.with_posts ?? [])) {
+    // item may be "@handle — description" string or { handle, summary } object
+    const handle  = typeof item === 'string' ? item.split(' ')[0] : item.handle;
+    const summary = typeof item === 'string' ? item.slice(handle.length).replace(/^[\s—-]+/, '') : item.summary;
+    sourceRows.push({
+      scan_id:         scanId,
+      handle:          handle,
+      status:          'with_posts',
+      post_summary:    summary || null,
+      cited_in_signal: citedHandles.has(handle.toLowerCase()),
+    });
+  }
+
+  for (const handle of (checked.no_recent_posts ?? checked.no_posts ?? [])) {
+    sourceRows.push({ scan_id: scanId, handle, status: 'no_posts', cited_in_signal: false });
+  }
+
+  for (const handle of (checked.could_not_check ?? [])) {
+    sourceRows.push({ scan_id: scanId, handle, status: 'could_not_check', cited_in_signal: false });
+  }
+
+  if (sourceRows.length > 0) {
+    const { error: srcErr } = await supabase.from('source_scores').insert(sourceRows);
+    if (srcErr) console.error('DB source_scores insert error:', srcErr.message);
+  }
+
+  console.log(`DB saved: scan ${scanId} | ${signals.length} signals | ${sourceRows.length} source rows`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const XAI_URL = "https://api.x.ai/v1/chat/completions";
 
 function xaiHeaders() {
@@ -75,8 +185,7 @@ export async function POST(req: NextRequest) {
     const timeCtx = buildTimeContext();
     const JSON_ONLY = "RESPOND WITH ONLY VALID JSON. No markdown fences. No backticks. No text before { or after }.";
 
-    // ── Call 1: SCAN ────────────────────────────────────────────────────────────
-    // Purpose: web search + data collection. Returns raw findings JSON.
+    // ── Call 1: SCAN ──────────────────────────────────────────────────────────
     const scanStart = Date.now();
 
     const scanRes = await fetch(XAI_URL, {
@@ -85,7 +194,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: "grok-4-1-fast",
         max_tokens: 4000,
-        temperature: 0.1, // low temp for factual reporting
+        temperature: 0.1,
         messages: [
           {
             role: "system",
@@ -112,17 +221,16 @@ export async function POST(req: NextRequest) {
 
     const scanRawText: string = scanData.choices?.[0]?.message?.content ?? "{}";
 
-    // Parse and re-stringify so the analyze call gets clean formatted JSON
+    let parsedScan: unknown = {};
     let scanPayload: string;
     try {
-      scanPayload = JSON.stringify(JSON.parse(extractJson(scanRawText)), null, 2);
+      parsedScan  = JSON.parse(extractJson(scanRawText));
+      scanPayload = JSON.stringify(parsedScan, null, 2);
     } catch {
-      // If scan JSON is malformed, pass raw text — analyze can still work with partial data
       scanPayload = scanRawText;
     }
 
-    // ── Call 2: ANALYZE ─────────────────────────────────────────────────────────
-    // Purpose: receive scan data, generate trading signals. No web search needed.
+    // ── Call 2: ANALYZE ───────────────────────────────────────────────────────
     const analyzeStart = Date.now();
 
     const analyzeRes = await fetch(XAI_URL, {
@@ -159,8 +267,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: errMsg }, { status: analyzeRes.status });
     }
 
-    // Normalise to { content: [{ type: "text", text: "..." }] } — unchanged from before
     const text: string = analyzeData.choices?.[0]?.message?.content ?? "";
+
+    // ── Persist to Supabase (non-blocking) ───────────────────────────────────
+    let parsedAnalysis: unknown = {};
+    try { parsedAnalysis = JSON.parse(extractJson(text)); } catch {}
+
+    saveToDb({
+      sessionName,
+      timeCtx,
+      rawScan:             parsedScan,
+      rawAnalysis:         parsedAnalysis,
+      scanDurationMs:      scanDuration,
+      analyzeeDurationMs:  analyzeDuration,
+      totalDurationMs:     totalDuration,
+    }).catch((e) => console.error('saveToDb unhandled:', e.message));
+
+    // Normalise to { content: [{ type: "text", text: "..." }] } — unchanged from before
     return NextResponse.json({ content: [{ type: "text", text }] });
 
   } catch (e: any) {
