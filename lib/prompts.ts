@@ -522,6 +522,19 @@ Return ONLY this exact JSON — fill every field with real current analysis:
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function buildScanSystemPrompt(sessionName: SessionName, timeCtx: TimeContext): string {
+  const isWeekend = timeCtx.ukDay === 'Saturday' || timeCtx.ukDay === 'Sunday';
+  const weekendScanNote = isWeekend ? `
+═══ WEEKEND SCAN MODE ═══
+Today is ${timeCtx.ukDay}. Most equity markets are CLOSED.
+Focus your searches on:
+- Crypto (BTC/ETH) — 24/7, live data
+- Geopolitical/military developments over the weekend
+- Macro news and central bank commentary for next week preview
+- Any breaking news that will impact Monday open
+Do NOT report equity market price action — exchanges are closed.
+═══ END WEEKEND NOTE ═══
+` : '';
+
   return `You are a financial data SCANNER. Your job is to SEARCH and COLLECT only. Do NOT analyze, do NOT generate trading signals, do NOT provide recommendations. Just report what you found.
 
 ═══ AUTHORITATIVE DATE/TIME ═══
@@ -530,7 +543,7 @@ Time: ${timeCtx.ukTime} ${timeCtx.tzAbbr}
 ISO: ${timeCtx.iso}
 All searches MUST be for content from TODAY or the last 24 hours only.
 ═══ END ═══
-
+${weekendScanNote}
 ${SESSION_FOCUS[sessionName]}
 
 ═══ VERIFIED ACCOUNTS — CHECK EVERY ONE ═══
@@ -626,8 +639,21 @@ export function buildScanUserPrompt(sessionName: SessionName): string {
 }
 
 export function buildAnalyzeSystemPrompt(sessionName: SessionName, timeCtx: TimeContext): string {
-  return `You are a senior market analyst. You are given PRE-COLLECTED scan data. Your job is to ANALYZE this data and generate trading signals. Do NOT search for new data. Work ONLY with what is provided in the user message. If the scan data is SPARSE or EMPTY for a category, do NOT fabricate signals — return fewer signals with honest confidence scores.
+  const isWeekend = timeCtx.ukDay === 'Saturday' || timeCtx.ukDay === 'Sunday';
+  const weekendRules = isWeekend ? `
+═══ WEEKEND RULES — MANDATORY ═══
+Today is ${timeCtx.ukDay}. These rules override all other signal generation rules:
+- Most markets are CLOSED. Forex has very thin liquidity. Equities are closed.
+- Do NOT generate signals with strength > 5 for any equity index or share.
+- Crypto (BTC/ETH) is the only 24/7 market — crypto signals can have normal strength.
+- For any non-crypto signal, append to reason: "Weekend — for Monday open positioning."
+- Focus on: macro preview for next week, geopolitical developments over the weekend, crypto only for live trades.
+- Set action to WAIT unless there is a high-conviction crypto setup (strength >= 7).
+═══ END WEEKEND RULES ═══
+` : '';
 
+  return `You are a senior market analyst. You are given PRE-COLLECTED scan data. Your job is to ANALYZE this data and generate trading signals. Do NOT search for new data. Work ONLY with what is provided in the user message. If the scan data is SPARSE or EMPTY for a category, do NOT fabricate signals — return fewer signals with honest confidence scores.
+${weekendRules}
 ═══ AUTHORITATIVE DATE/TIME ═══
 Date: ${timeCtx.ukDay}, ${timeCtx.ukDate}
 Time: ${timeCtx.ukTime} ${timeCtx.tzAbbr}
