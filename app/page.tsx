@@ -156,7 +156,7 @@ export default function SignalBotApp() {
       // Load any outcomes already set by the auto-verify cron (fire-and-forget)
       const uuids = Object.values(ids);
       if (uuids.length > 0) {
-        const qs = uuids.map((id) => `ids=${encodeURIComponent(id)}`).join('&');
+        const qs = uuids.map((id) => `ids=${encodeURIComponent(id as string)}`).join('&');
         fetch(`/api/signals/outcomes?${qs}`)
           .then((r) => r.ok ? r.json() : [])
           .then((rows: { id: string; outcome: string | null; outcome_notes: string | null }[]) => {
