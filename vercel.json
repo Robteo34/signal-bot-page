@@ -1,6 +1,4 @@
 {
-  "framework": "nextjs",
-  "_note": "cron registered 2026-04-11 — verify-outcomes runs Mon-Fri 20:30 UTC",
   "crons": [
     {
       "path": "/api/cron/verify-outcomes",
