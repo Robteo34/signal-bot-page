@@ -66,7 +66,9 @@ export default function SignalBotApp() {
   const [appState, setAppState] = useState<AppState | null>(null);
   const [scanAge, setScanAge] = useState('');
   const [signalIds, setSignalIds] = useState<Record<string, string>>({});
-  const [signalOutcomes, setSignalOutcomes] = useState<Record<string, string>>({});
+
+  // isAuto=true → suggested by cron (overrideable); isAuto=false → confirmed by user (final)
+  const [signalOutcomes, setSignalOutcomes] = useState<Record<string, { outcome: string; isAuto: boolean }>>({});
 
   // Swipe state (horizontal only — no conflict with vertical scroll)
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -147,8 +149,31 @@ export default function SignalBotApp() {
         if (block.type === 'text') rawText += block.text;
       }
       const result: ScanResult = JSON.parse(fixJson(rawText));
-      setSignalIds(data.signal_ids ?? {});
+      const ids = data.signal_ids ?? {} as Record<string, string>;
+      setSignalIds(ids);
       setSignalOutcomes({});
+
+      // Load any outcomes already set by the auto-verify cron (fire-and-forget)
+      const uuids = Object.values(ids);
+      if (uuids.length > 0) {
+        const qs = uuids.map((id) => `ids=${encodeURIComponent(id)}`).join('&');
+        fetch(`/api/signals/outcomes?${qs}`)
+          .then((r) => r.ok ? r.json() : [])
+          .then((rows: { id: string; outcome: string | null; outcome_notes: string | null }[]) => {
+            const updates: Record<string, { outcome: string; isAuto: boolean }> = {};
+            for (const [asset, uuid] of Object.entries(ids)) {
+              const row = rows.find((r) => r.id === uuid);
+              if (row?.outcome) {
+                updates[asset] = {
+                  outcome: row.outcome,
+                  isAuto: (row.outcome_notes ?? '').startsWith('AUTO-VERIFIED'),
+                };
+              }
+            }
+            if (Object.keys(updates).length > 0) setSignalOutcomes(updates);
+          })
+          .catch(() => {});
+      }
 
       const current = loadState();
       const isWait = result.action === 'WAIT' || result.signal_strength < 7;
@@ -185,7 +210,7 @@ export default function SignalBotApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ signalId, outcome }),
       });
-      if (res.ok) setSignalOutcomes((prev) => ({ ...prev, [asset]: outcome }));
+      if (res.ok) setSignalOutcomes((prev) => ({ ...prev, [asset]: { outcome, isAuto: false } }));
     } catch {}
   }
 
@@ -318,6 +343,13 @@ export default function SignalBotApp() {
                 { key: 'PARTIAL', label: '⚡ PARTIAL', color: '#EF9F27' },
                 { key: 'EXPIRED', label: '⏰',         color: '#555'    },
               ] as const;
+              const outcomeColor = marked ? (OUTCOMES.find(o => o.key === marked.outcome)?.color ?? '#888') : '#888';
+              const outcomeLabel = marked ? (OUTCOMES.find(o => o.key === marked.outcome)?.label ?? marked.outcome) : '';
+              // Three states:
+              // 1. null       → show 4 buttons
+              // 2. isAuto     → show 🤖 badge + buttons (overrideable)
+              // 3. user-set   → show final badge only
+              const showButtons = !marked || marked.isAuto;
               return (
                 <div key={i}>
                   <SignalBar
@@ -334,21 +366,29 @@ export default function SignalBotApp() {
                     onClick={() => { setDetailIndex(i); setScreen('detail'); }}
                   />
                   {hasId && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 12px 6px', borderBottom: '1px solid #0d0d0d' }}>
-                      {marked ? (
-                        <span style={{ fontSize: 9, fontFamily: 'monospace', color: OUTCOMES.find(o => o.key === marked)?.color ?? '#888', background: '#ffffff08', border: `1px solid ${OUTCOMES.find(o => o.key === marked)?.color ?? '#888'}44`, borderRadius: 3, padding: '2px 8px' }}>
-                          {OUTCOMES.find(o => o.key === marked)?.label ?? marked}
-                        </span>
-                      ) : (
-                        OUTCOMES.map((o) => (
-                          <button
-                            key={o.key}
-                            onClick={() => markOutcome(sig.asset, o.key)}
-                            style={{ fontSize: 9, fontFamily: 'monospace', color: '#444', background: 'none', border: '1px solid #1a1a1a', borderRadius: 3, padding: '2px 6px', minHeight: 36, cursor: 'pointer' }}
-                          >
-                            {o.label}
-                          </button>
-                        ))
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, padding: '3px 12px 6px', borderBottom: '1px solid #0d0d0d' }}>
+                      {marked && (
+                        <div>
+                          <span style={{ fontSize: 9, fontFamily: 'monospace', color: outcomeColor, background: '#ffffff08', border: `1px solid ${outcomeColor}44`, borderRadius: 3, padding: '2px 8px' }}>
+                            {marked.isAuto ? '🤖 ' : ''}{outcomeLabel}
+                          </span>
+                          {marked.isAuto && (
+                            <span style={{ fontSize: 8, fontFamily: 'monospace', color: '#333', marginLeft: 5 }}>auto — tap to override</span>
+                          )}
+                        </div>
+                      )}
+                      {showButtons && (
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          {OUTCOMES.map((o) => (
+                            <button
+                              key={o.key}
+                              onClick={() => markOutcome(sig.asset, o.key)}
+                              style={{ fontSize: 9, fontFamily: 'monospace', color: '#444', background: 'none', border: '1px solid #1a1a1a', borderRadius: 3, padding: '2px 6px', minHeight: 36, cursor: 'pointer' }}
+                            >
+                              {o.label}
+                            </button>
+                          ))}
+                        </div>
                       )}
                     </div>
                   )}
