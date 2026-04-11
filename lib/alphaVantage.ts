@@ -29,16 +29,15 @@ async function fetchRSI(symbol: string): Promise<number | null> {
   }
 }
 
-// 4 symbols × 2 calls = 8 Alpha Vantage calls per scan (well within 25/day free tier)
-const SYMBOLS = ['NVDA', 'TSLA', 'AAPL', 'MSFT'];
+// tickers: dynamic list from screener/scan. Capped at 4 (= 8 AV calls, safe for 25/day free tier).
+export async function getMarketData(tickers: string[]): Promise<string> {
+  if (!AV_KEY || tickers.length === 0) return '';
 
-export async function getMarketData(): Promise<string> {
-  if (!AV_KEY) return 'Alpha Vantage API key not configured — no technical data available.';
-
+  const selected = tickers.slice(0, 4);
   const lines: string[] = [];
 
   await Promise.all(
-    SYMBOLS.map(async (sym) => {
+    selected.map(async (sym) => {
       const [quote, rsi] = await Promise.all([fetchQuote(sym), fetchRSI(sym)]);
       if (!quote) return;
       const rsiLabel = rsi == null ? 'N/A' : rsi < 30 ? `${rsi.toFixed(1)} OVERSOLD` : rsi > 70 ? `${rsi.toFixed(1)} OVERBOUGHT` : `${rsi.toFixed(1)} neutral`;
@@ -46,11 +45,12 @@ export async function getMarketData(): Promise<string> {
     })
   );
 
-  if (lines.length === 0) return 'Alpha Vantage: no data retrieved.';
+  if (lines.length === 0) return '';
 
   return [
-    '═══ REAL TECHNICAL DATA (Alpha Vantage) ═══',
+    '═══ VERIFIED TECHNICAL DATA (Alpha Vantage) ═══',
     ...lines,
-    'Use this data to validate share analysis. RSI<30 = oversold bounce candidate. RSI>70 = overbought short candidate.',
+    'RSI<30 = oversold bounce candidate. RSI>70 = overbought short candidate.',
+    '═══ END ═══',
   ].join('\n');
 }

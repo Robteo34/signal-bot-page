@@ -10,6 +10,7 @@ import {
 import { getSupabase } from "@/lib/supabase";
 import { adjustConfidenceBySourceHistory } from "@/lib/sourceScoring";
 import { getMarketData } from "@/lib/alphaVantage";
+import { screenMarkets } from "@/lib/marketScreener";
 
 export const maxDuration = 120; // covers two sequential xAI calls
 
@@ -198,6 +199,27 @@ async function saveToDbSafe(params: Parameters<typeof saveToDb>[0]): Promise<Rec
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+const TICKER_EXCLUDE = new Set([
+  'LONG','SHORT','WAIT','HIGH','LOW','MEDIUM','HEDGE','WATCH','SOON','POST',
+  'JSON','NULL','TRUE','SCAN','DATA','VERIFIED','INFERRED','BULLISH','BEARISH',
+  'NEUTRAL','MILITARY','MACRO','EARNINGS','OPTIONS','CRYPTO','SUPPLY','REGULA',
+  'IMMEDIATE','WITH','FROM','THAT','THIS','HAVE','BEEN','WILL','WERE','THEY',
+  'RICH','SPARSE','EMPTY','MODERATE','EXIT','BOTH','NONE','ONLY',
+]);
+
+function extractTopTickers(scanData: unknown): string[] {
+  const text = JSON.stringify(scanData);
+  const matches = text.match(/\b[A-Z]{2,5}\b/g) ?? [];
+  const freq = new Map<string, number>();
+  for (const m of matches) {
+    if (!TICKER_EXCLUDE.has(m)) freq.set(m, (freq.get(m) ?? 0) + 1);
+  }
+  return [...freq.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([t]) => t);
+}
+
 const XAI_URL = "https://api.x.ai/v1/chat/completions";
 
 function xaiHeaders() {
@@ -221,6 +243,19 @@ export async function POST(req: NextRequest) {
     const timeCtx = buildTimeContext();
     const JSON_ONLY = "RESPOND WITH ONLY VALID JSON. No markdown fences. No backticks. No text before { or after }.";
 
+    // ── Step 0: Market screener (parallel with nothing — runs first) ──────────
+    let screenerData = '';
+    try {
+      screenerData = await screenMarkets();
+      console.log('Screener:', screenerData.slice(0, 120));
+    } catch (e: any) {
+      console.warn('Market screener failed (non-fatal):', e?.message ?? e);
+    }
+
+    const scanUserContent = screenerData
+      ? `${buildScanUserPrompt(sessionName)}\n\nLIVE SCREENER CONTEXT:\n${screenerData}\nFor each ticker listed above, search X for WHY it is moving and report findings.`
+      : buildScanUserPrompt(sessionName);
+
     // ── Call 1: SCAN ──────────────────────────────────────────────────────────
     const scanStart = Date.now();
 
@@ -238,7 +273,7 @@ export async function POST(req: NextRequest) {
           },
           {
             role: "user",
-            content: buildScanUserPrompt(sessionName),
+            content: scanUserContent,
           },
         ],
       }),
@@ -266,11 +301,13 @@ export async function POST(req: NextRequest) {
       scanPayload = scanRawText;
     }
 
-    // ── Alpha Vantage technical data (non-blocking, best-effort) ─────────────
+    // ── Extract top tickers from scan + fetch Alpha Vantage data ─────────────
     let technicalData = '';
     try {
-      technicalData = await getMarketData();
-      console.log('Alpha Vantage:', technicalData.slice(0, 120));
+      const topTickers = extractTopTickers(parsedScan);
+      console.log('Top tickers from scan:', topTickers);
+      technicalData = await getMarketData(topTickers);
+      if (technicalData) console.log('Alpha Vantage:', technicalData.slice(0, 120));
     } catch (e: any) {
       console.warn('Alpha Vantage fetch failed (non-fatal):', e?.message ?? e);
     }
@@ -278,9 +315,9 @@ export async function POST(req: NextRequest) {
     // ── Call 2: ANALYZE ───────────────────────────────────────────────────────
     const analyzeStart = Date.now();
 
-    const analyzePayload = technicalData
-      ? `${technicalData}\n\n${scanPayload}`
-      : scanPayload;
+    const analyzePayload = [screenerData, technicalData, scanPayload]
+      .filter(Boolean)
+      .join('\n\n');
 
     const analyzeRes = await fetch(XAI_URL, {
       method: "POST",

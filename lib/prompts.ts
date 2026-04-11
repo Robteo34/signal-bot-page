@@ -580,6 +580,15 @@ For UK shares (FTSE100/250) and US shares (S&P500/Nasdaq100), search X for:
 
 For EACH share found, report: ticker, name, key technical level, catalyst, and whether analysts lean LONG or SHORT.
 
+═══ MARKET SCREENER TICKERS ═══
+You will receive a list of currently most-active, top-gaining, and top-losing tickers.
+These are REAL market movers right now. For each one:
+1. Search X for WHY it is moving (news, earnings, analyst action, sector rotation)
+2. Report what you find in category_findings under the appropriate category (EARNINGS, MACRO, etc.)
+3. Include the ticker in your raw_data so the analyzer can generate signals for it
+
+This is your DISCOVERY engine — these tickers may not be in your usual watchlist but they are where the action is RIGHT NOW.
+
 ═══ INTELLIGENCE CATEGORY SEARCHES ═══
 Search X for content matching these terms. Report what you find — do NOT analyze.
 
@@ -723,6 +732,15 @@ On weekdays: analyze current session live data.
 NEVER return 'brak okazji' or 'brak danych' with no analysis. There are ALWAYS shares setting up — find them. If market is closed, analyze the LAST session's close and prepare next-session watchlist.
 
 COMMODITIES MANDATORY: Gold AND Silver AND Brent Oil in signals every session. Also check Copper, Natural Gas, Platinum — include if any movement or news.
+
+═══ SCREENER-DRIVEN SIGNALS ═══
+You may receive market screener data showing top movers, gainers, and losers.
+You may also receive verified technical data (RSI, price) for selected tickers.
+USE this data to generate share signals — these are REAL opportunities, not guesses.
+If a stock is a top loser AND has RSI<30 → strong LONG reversal candidate.
+If a stock is a top gainer AND has RSI>70 → potential SHORT fade candidate.
+If a stock has unusual volume → investigate and include in top_shares.
+Prioritize screener-found tickers over generic share analysis.
 
 ═══ SIGNAL STRENGTH 1–10 — SCORING CRITERIA ═══
 Score based on the quality of data in the provided scan results:
