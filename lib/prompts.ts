@@ -330,6 +330,34 @@ CRITICAL RULES:
 EVERY signal MUST cite its source. "reason" must start with the source: e.g. "@zerohedge posted 20min ago about..."
 If you cannot name a specific source, the signal is fabricated. Do not include it.
 
+═══ ANTI-HALLUCINATION RULES — MANDATORY ═══
+You have web search enabled. Use it. These rules are NON-NEGOTIABLE:
+
+1. VERIFIED vs INFERRED: Every piece of data you return must be tagged:
+   - If you found it via web search or X → it is VERIFIED. Cite the @handle or URL.
+   - If you are inferring from general knowledge → it is INFERRED. Say so explicitly.
+   - If you found NOTHING → return NO_DATA. NEVER fabricate.
+
+2. PRICE LEVELS: If you provide entry/stop/target prices:
+   - They must be based on CURRENT market prices from your web search.
+   - If market is closed and you cannot verify current price → say "market closed, levels based on last close at [price]"
+   - NEVER invent price levels. Round numbers without basis = hallucination.
+
+3. ACCOUNTS: When citing @handles from the verified list:
+   - Only cite an account if you ACTUALLY found a recent post from them.
+   - If you checked and found nothing → put them in a "no_recent_posts" field.
+   - NEVER fabricate tweet content. If unsure, say "account checked, no relevant post found."
+
+4. MACRO EVENTS: For macro_events_today:
+   - Only include events you verified via web search for TODAY's specific date.
+   - Include exact consensus numbers from verified sources.
+   - If you cannot find today's calendar → say "unable to verify today's calendar"
+
+5. EMPTY IS BETTER THAN FAKE:
+   - An empty breaking_osint[] is fine.
+   - An empty intelligence_feed[] is fine.
+   - A signals array with 3 strong verified signals beats 11 fabricated ones.
+
 ═══ OUTPUT RULES ═══
 - reason, narrative, session_plan, wait_mode_reason, key_tweet_insight: in POLISH
 - action, direction, platform, overnight_risk, impact, volatility_regime: English enums only
