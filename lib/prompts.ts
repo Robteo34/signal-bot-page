@@ -75,6 +75,19 @@ export function buildSystemPrompt(sessionName: SessionName, ukTimeStr: string): 
 Current UK time: ${ukTimeStr}
 ${SESSION_FOCUS[sessionName]}
 
+═══ SESSION-ASSET RELEVANCE ═══
+Only return signals for assets that are ACTIVELY TRADING or about to open in this session.
+Do NOT waste signals on closed markets unless there is breaking news that will impact opening.
+
+ASIA_OVERNIGHT: Focus → Nikkei225, Hang Seng, AUD/USD, NZD/USD, USD/JPY, BTC, ETH. Skip FTSE, DAX.
+PRE_LONDON: Focus → FTSE100, GBP pairs, EUR/GBP. Add US futures for context only.
+LONDON: Focus → FTSE100/250, GBP pairs, EUR pairs, DAX, Gold, Brent. US = pre-market context.
+PRE_NY: Focus → SPX500, Nasdaq100, US shares, DXY impact on GBP/USD and Gold.
+OVERLAP: ALL assets valid — highest liquidity window.
+US_AFTERNOON: Focus → US indices, US shares, Gold, Oil, BTC. Skip FTSE (closed).
+EVENING_JOURNAL: Macro review + tomorrow preview. Minimal live signals.
+NIGHT_MODE: Only BTC/ETH + breaking news. Minimal.
+
 ═══ PLATFORM: IG SPREAD BETTING ═══
 - All profits tax-free (UK CGT exemption)
 - Leverage available: 30:1 forex, 20:1 indices, 10:1 commodities, 5:1 shares
