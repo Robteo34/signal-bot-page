@@ -1,21 +1,6 @@
 const AV_KEY  = process.env.ALPHA_VANTAGE_KEY;
 const AV_BASE = 'https://www.alphavantage.co/query';
 
-async function fetchQuote(symbol: string): Promise<{ lastClose: number | null; volume: number | null } | null> {
-  try {
-    const res  = await fetch(`${AV_BASE}?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${AV_KEY}`);
-    const data = await res.json();
-    const q    = data['Global Quote'];
-    if (!q || !q['05. price']) return null;
-    return {
-      lastClose: parseFloat(q['05. price']) || null,
-      volume:    parseInt(q['06. volume'])  || null,
-    };
-  } catch {
-    return null;
-  }
-}
-
 async function fetchRSI(symbol: string): Promise<number | null> {
   try {
     const res  = await fetch(`${AV_BASE}?function=RSI&symbol=${symbol}&interval=daily&time_period=14&series_type=close&apikey=${AV_KEY}`);
@@ -29,7 +14,8 @@ async function fetchRSI(symbol: string): Promise<number | null> {
   }
 }
 
-async function fetchVolumeProfile(symbol: string): Promise<{
+async function fetchDailyData(symbol: string): Promise<{
+  lastClose: number | null;
   avgVolume20: number | null;
   volumeRatio: number | null;
   volumeTrend: 'INCREASING' | 'DECREASING' | 'FLAT';
@@ -44,6 +30,7 @@ async function fetchVolumeProfile(symbol: string): Promise<{
     const dates = Object.keys(ts).sort().reverse();
     if (dates.length < 21) return null;
 
+    const lastClose     = parseFloat(ts[dates[0]]?.['4. close']) || null;
     const latestVolume  = parseInt(ts[dates[0]]?.['5. volume']) || 0;
     const last20Volumes = dates.slice(1, 21).map((d) => parseInt(ts[d]?.['5. volume']) || 0);
     const avgVolume20   = Math.round(last20Volumes.reduce((a, b) => a + b, 0) / 20);
@@ -54,7 +41,7 @@ async function fetchVolumeProfile(symbol: string): Promise<{
       last3[0] > last3[1] && last3[1] > last3[2] ? 'INCREASING' :
       last3[0] < last3[1] && last3[1] < last3[2] ? 'DECREASING' : 'FLAT';
 
-    return { avgVolume20, volumeRatio, volumeTrend };
+    return { lastClose, avgVolume20, volumeRatio, volumeTrend };
   } catch {
     return null;
   }
@@ -79,24 +66,18 @@ export async function getMarketData(tickers: string[]): Promise<string> {
 
   await Promise.all(
     selected.map(async (sym) => {
-      const [rsiValue, dailyData, quote] = await Promise.all([
-        fetchRSI(sym),
-        fetchVolumeProfile(sym),
-        fetchQuote(sym),
-      ]);
+      const [rsiValue, daily] = await Promise.all([fetchRSI(sym), fetchDailyData(sym)]);
 
-      if (!quote && !dailyData) return;
+      if (!daily) return;
 
-      const rsi      = rsiValue;
-      const rsiStr   = rsi != null
+      const rsi    = rsiValue;
+      const rsiStr = rsi != null
         ? `${rsi.toFixed(1)} ${rsi < 30 ? 'OVERSOLD' : rsi > 70 ? 'OVERBOUGHT' : 'NEUTRAL'}`
         : 'N/A';
-      const vol      = volLabel(dailyData?.volumeRatio ?? null);
-      const trend    = dailyData?.volumeTrend ?? 'N/A';
-      const avg20    = dailyData?.avgVolume20?.toLocaleString() ?? 'N/A';
-      const close    = quote?.lastClose ?? 'N/A';
 
-      lines.push(`${sym}: close=$${close}, RSI(14)=${rsiStr}, Volume=${vol}, Vol Trend=${trend}, Avg20Vol=${avg20}`);
+      lines.push(
+        `${sym}: close=$${daily.lastClose ?? 'N/A'}, RSI(14)=${rsiStr}, Volume=${volLabel(daily.volumeRatio)}, Vol Trend=${daily.volumeTrend}, Avg20Vol=${daily.avgVolume20?.toLocaleString() ?? 'N/A'}`
+      );
     })
   );
 
