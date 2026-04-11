@@ -9,7 +9,7 @@ import {
 } from "@/lib/prompts";
 import { getSupabase } from "@/lib/supabase";
 
-export const maxDuration = 120;
+export const maxDuration = 120; // covers two sequential xAI calls
 
 function buildTimeContext(): TimeContext {
   const now = new Date();
