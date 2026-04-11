@@ -66,12 +66,17 @@ async function saveToDb(params: {
   totalDurationMs: number;
 }) {
   const db = getSupabase();
-  if (!db) return; // env vars not set — skip silently (already warned in getSupabase)
+  if (!db) {
+    console.warn('DB: getSupabase() returned null — env vars missing, skipping save');
+    return;
+  }
 
   const { sessionName, timeCtx, rawScan, rawAnalysis, scanDurationMs, analyzeeDurationMs, totalDurationMs } = params;
 
   const analysis = rawAnalysis as Record<string, any>;
   const scan     = rawScan     as Record<string, any>;
+
+  console.log(`DB: attempting save — session=${sessionName} action=${analysis.action ?? '?'} signals=${(analysis.signals ?? []).length}`);
 
   // 1. Insert scan row
   const { data: scanRow, error: scanErr } = await db
@@ -95,11 +100,12 @@ async function saveToDb(params: {
     .single();
 
   if (scanErr) {
-    console.error('DB scans insert error:', scanErr.message);
+    console.error('DB scans insert error:', scanErr.code, scanErr.message);
     return;
   }
 
   const scanId = scanRow.id as string;
+  console.log(`DB: scan row created — id=${scanId}`);
 
   // 2. Insert individual signals
   const signals: any[] = analysis.signals ?? [];
@@ -121,7 +127,8 @@ async function saveToDb(params: {
     }));
 
     const { error: sigErr } = await db.from('signals').insert(signalRows);
-    if (sigErr) console.error('DB signals insert error:', sigErr.message);
+    if (sigErr) console.error('DB signals insert error:', sigErr.code, sigErr.message);
+    else console.log(`DB: ${signalRows.length} signals inserted`);
   }
 
   // 3. Insert source_scores from accounts_checked
@@ -157,10 +164,20 @@ async function saveToDb(params: {
 
   if (sourceRows.length > 0) {
     const { error: srcErr } = await db.from('source_scores').insert(sourceRows);
-    if (srcErr) console.error('DB source_scores insert error:', srcErr.message);
+    if (srcErr) console.error('DB source_scores insert error:', srcErr.code, srcErr.message);
+    else console.log(`DB: ${sourceRows.length} source_scores inserted`);
   }
 
   console.log(`DB saved: scan ${scanId} | ${signals.length} signals | ${sourceRows.length} source rows`);
+}
+
+// Wrap saveToDb so any thrown exception is logged with a stack trace
+async function saveToDbSafe(params: Parameters<typeof saveToDb>[0]) {
+  try {
+    await saveToDb(params);
+  } catch (e: any) {
+    console.error('DB saveToDb exception:', e?.message ?? e, e?.stack ?? '');
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -276,7 +293,7 @@ export async function POST(req: NextRequest) {
     let parsedAnalysis: unknown = {};
     try { parsedAnalysis = JSON.parse(extractJson(text)); } catch {}
 
-    saveToDb({
+    saveToDbSafe({
       sessionName,
       timeCtx,
       rawScan:             parsedScan,
@@ -284,7 +301,7 @@ export async function POST(req: NextRequest) {
       scanDurationMs:      scanDuration,
       analyzeeDurationMs:  analyzeDuration,
       totalDurationMs:     totalDuration,
-    }).catch((e) => console.error('saveToDb unhandled:', e.message));
+    });
 
     // Normalise to { content: [{ type: "text", text: "..." }] } — unchanged from before
     return NextResponse.json({ content: [{ type: "text", text }] });
