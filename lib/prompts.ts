@@ -327,6 +327,14 @@ Rule: action = LONG or SHORT only when signal_strength >= 7. Otherwise WAIT.
 export function buildUserPrompt(sessionName: SessionName): string {
   return `Scan all markets for the ${sessionName} session. Search X for real-time sentiment. Analyse all asset categories.
 
+SIGNALS RULES: Return 3-8 signals. Only include assets where you found a real signal with strength >= 5. Do NOT fabricate signals for assets with no data — if you have no genuine setup for an asset, skip it entirely. List all skipped assets in "skipped_assets".
+
+BREAKING OSINT RULES: Only include breaking_osint entries for verified accounts that actually posted in the last 2 hours with clear market relevance. Return an empty array [] if nothing qualifies.
+
+INTELLIGENCE FEED RULES: Only include intelligence_feed entries where credibility >= 5 and there is a specific IG-tradeable impact. Return an empty array [] if nothing qualifies.
+
+TOP INTELLIGENCE ACCOUNTS RULES: Only include top_intelligence_accounts for newly discovered accounts not already in the verified list. Return an empty array [] if none found.
+
 Return ONLY this exact JSON — fill every field with real current analysis:
 
 {
@@ -347,7 +355,6 @@ Return ONLY this exact JSON — fill every field with real current analysis:
   },
   "signals": [
     {
-      "INSTRUCTION": "Return 3-8 signals. ONLY include assets where you found a real signal with strength >= 5. DO NOT fabricate signals for assets with no data. Skip any asset where you have no genuine setup.",
       "asset": "instrument name matching IG universe",
       "direction": "LONG|SHORT|WAIT",
       "strength": 0,
@@ -362,7 +369,7 @@ Return ONLY this exact JSON — fill every field with real current analysis:
       "session_relevant": true
     }
   ],
-  "skipped_assets": ["assets from the IG universe with no actionable setup this session"],
+  "skipped_assets": ["FTSE250", "Russell2000", "...all assets from IG universe with no actionable setup"],
   "top_shares": {
     "uk": [
       {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"","strength":0},
