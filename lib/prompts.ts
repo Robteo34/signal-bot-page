@@ -384,11 +384,13 @@ export function buildUserPrompt(sessionName: SessionName): string {
 
 SIGNALS RULES: Return 3-8 signals. Only include assets where you found a real signal with strength >= 5. Do NOT fabricate signals for assets with no data — if you have no genuine setup for an asset, skip it entirely. List all skipped assets in "skipped_assets".
 
-BREAKING OSINT RULES: Only include breaking_osint entries for verified accounts that actually posted in the last 2 hours with clear market relevance. Return an empty array [] if nothing qualifies.
+BREAKING OSINT RULES: Only include breaking_osint entries for verified accounts that actually posted in the last 2 hours with clear market relevance. Return [] if nothing qualifies — empty is valid, fabricated is not.
 
-INTELLIGENCE FEED RULES: Only include intelligence_feed entries where credibility >= 5 and there is a specific IG-tradeable impact. Return an empty array [] if nothing qualifies.
+INTELLIGENCE FEED RULES: Only include intelligence_feed entries where credibility >= 5 and there is a specific IG-tradeable impact. Return [] if nothing qualifies — empty is valid, fabricated is not.
 
-TOP INTELLIGENCE ACCOUNTS RULES: Only include top_intelligence_accounts for newly discovered accounts not already in the verified list. Return an empty array [] if none found.
+TOP INTELLIGENCE ACCOUNTS RULES: Only include top_intelligence_accounts for newly discovered accounts not already in the verified list. Return [] if none found — empty is valid, fabricated is not.
+
+ACCOUNTS_CHECKED RULES: You MUST populate accounts_checked. This field proves you actually checked the verified account list. For every account in the verified list, place it in exactly one of: with_relevant_posts (found a relevant post), no_recent_posts (checked, nothing relevant in last 2h), or could_not_check (search failed or account inaccessible). No account should be silently omitted.
 
 Return ONLY this exact JSON — fill every field with real current analysis:
 
@@ -468,6 +470,11 @@ Return ONLY this exact JSON — fill every field with real current analysis:
       "category": "MILITARY|MACRO|EARNINGS|OPTIONS|CRYPTO|SUPPLY|REGULA"
     }
   ],
+  "accounts_checked": {
+    "with_relevant_posts": ["@handle — brief description of what they posted"],
+    "no_recent_posts": ["@handle", "@handle"],
+    "could_not_check": ["@handle"]
+  },
   "top_intelligence_accounts": [
     {
       "handle": "@nowoodkryte_konto",

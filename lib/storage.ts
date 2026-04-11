@@ -131,6 +131,11 @@ export interface ScanResult {
     eth: { price: string; direction: string; key_level: string; note: string };
   };
   intelligence_feed?: IntelligenceItem[];
+  accounts_checked?: {
+    with_relevant_posts: string[];
+    no_recent_posts: string[];
+    could_not_check: string[];
+  };
   breaking_osint?: BreakingOsint[];
   top_intelligence_accounts?: IntelAccount[];
   countdown_event: { label: string; minutes: number };
