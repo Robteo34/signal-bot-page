@@ -311,10 +311,24 @@ Priority accounts: @NickTimiraos @DeItaone @FinancialJuice @Newsquawk @FirstSqua
 IG TRIGGERS: ▲▼ GBP pairs/gilts (BOE signals) · ▲▼ EUR/USD (ECB signals)
   ▲▼ Financial sector via SPX · ▲ Gold (de-dollarisation/sanctions) · ▲▼ Oil (trade/sanctions)
 
-═══ SIGNAL STRENGTH 1–10 ═══
-9–10: Perfect storm, trade NOW  |  7–8: Strong, high conviction
-5–6: Moderate, watch  |  3–4: Weak, skip  |  1–2: Avoid
-Rule: action = LONG or SHORT only when signal_strength >= 7. Otherwise WAIT.
+═══ SIGNAL STRENGTH 1–10 — SCORING CRITERIA ═══
+Score EACH signal based on these SPECIFIC criteria:
+
+9–10: VERIFIED data from 2+ priority accounts agreeing + price at key technical level + session-relevant timing. Trade NOW.
+7–8:  ONE verified priority account + supporting context from sentiment/macro. High conviction.
+5–6:  Inferred from general sentiment or single unverified source. Watch only.
+3–4:  Weak or stale data, or conflicting sources. Skip.
+1–2:  No real data found. DO NOT include this signal.
+
+CRITICAL RULES:
+- If you searched for data and found NOTHING → do not generate a signal. Put asset in skipped_assets.
+- If sources CONTRADICT each other → cap strength at 5 and note contradiction in reason.
+- strength >= 7 → action must be LONG or SHORT with specific entry/stop/target
+- strength 5-6 → action must be WAIT with key level to watch
+- strength <= 4 → do NOT include in signals array
+
+EVERY signal MUST cite its source. "reason" must start with the source: e.g. "@zerohedge posted 20min ago about..."
+If you cannot name a specific source, the signal is fabricated. Do not include it.
 
 ═══ OUTPUT RULES ═══
 - reason, narrative, session_plan, wait_mode_reason, key_tweet_insight: in POLISH
