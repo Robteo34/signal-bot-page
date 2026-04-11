@@ -1,3 +1,4 @@
+// Lazy-initialised Supabase client — safe during build when env vars are absent
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 let _supabase: SupabaseClient | null = null;
