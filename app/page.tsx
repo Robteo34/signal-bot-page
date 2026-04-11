@@ -18,8 +18,9 @@ import TopSharesCard from '@/components/TopSharesCard';
 import IGTipsCard from '@/components/IGTipsCard';
 import CryptoSection from '@/components/CryptoSection';
 import IntelligenceFeed from '@/components/IntelligenceFeed';
+import SignalHistory from '@/components/SignalHistory';
 
-type Screen = 'main' | 'detail' | 'journal';
+type Screen = 'main' | 'detail' | 'journal' | 'history';
 
 interface PriceData {
   btc: number | null; gbpusd: number | null; spx: number | null;
@@ -64,6 +65,8 @@ export default function SignalBotApp() {
   const [prices, setPrices] = useState<PriceData | null>(null);
   const [appState, setAppState] = useState<AppState | null>(null);
   const [scanAge, setScanAge] = useState('');
+  const [signalIds, setSignalIds] = useState<Record<string, string>>({});
+  const [signalOutcomes, setSignalOutcomes] = useState<Record<string, string>>({});
 
   // Swipe state (horizontal only — no conflict with vertical scroll)
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -144,6 +147,8 @@ export default function SignalBotApp() {
         if (block.type === 'text') rawText += block.text;
       }
       const result: ScanResult = JSON.parse(fixJson(rawText));
+      setSignalIds(data.signal_ids ?? {});
+      setSignalOutcomes({});
 
       const current = loadState();
       const isWait = result.action === 'WAIT' || result.signal_strength < 7;
@@ -169,6 +174,20 @@ export default function SignalBotApp() {
       setIsScanning(false);
     }
   }, [session, isScanning]);
+
+  // ── Outcome marking ─────────────────────────────────────────────────────────
+  async function markOutcome(asset: string, outcome: string) {
+    const signalId = signalIds[asset];
+    if (!signalId) return;
+    try {
+      const res = await fetch('/api/signals/outcome', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signalId, outcome }),
+      });
+      if (res.ok) setSignalOutcomes((prev) => ({ ...prev, [asset]: outcome }));
+    } catch {}
+  }
 
   // ── Horizontal swipe for signal detail ─────────────────────────────────────
   function onTouchStart(e: React.TouchEvent) {
@@ -200,6 +219,15 @@ export default function SignalBotApp() {
     return (
       <div style={{ height: '100dvh', background: '#050505', overflow: 'hidden' }}>
         <Journal state={appState} onUpdate={() => setAppState(loadState())} onClose={() => setScreen('main')} />
+      </div>
+    );
+  }
+
+  // ── History screen ──────────────────────────────────────────────────────────
+  if (screen === 'history') {
+    return (
+      <div style={{ height: '100dvh', background: '#050505', overflow: 'hidden' }}>
+        <SignalHistory onClose={() => setScreen('main')} />
       </div>
     );
   }
@@ -281,18 +309,48 @@ export default function SignalBotApp() {
             <div style={{ padding: '6px 12px 2px', fontSize: 9, fontFamily: 'monospace', color: '#333', letterSpacing: '0.1em' }}>
               IG SPREAD BET SIGNALS
             </div>
-            {igSignals.map((sig, i) => (
-              <SignalBar
-                key={i}
-                asset={sig.asset}
-                direction={sig.direction}
-                strength={sig.strength}
-                reason={sig.reason}
-                platform={sig.platform}
-                overnight_risk={sig.overnight_risk}
-                onClick={() => { setDetailIndex(i); setScreen('detail'); }}
-              />
-            ))}
+            {igSignals.map((sig, i) => {
+              const marked = signalOutcomes[sig.asset];
+              const hasId  = !!signalIds[sig.asset];
+              const OUTCOMES = [
+                { key: 'HIT',     label: '✅ HIT',     color: '#5DCAA5' },
+                { key: 'MISS',    label: '❌ MISS',    color: '#D85A30' },
+                { key: 'PARTIAL', label: '⚡ PARTIAL', color: '#EF9F27' },
+                { key: 'EXPIRED', label: '⏰',         color: '#555'    },
+              ] as const;
+              return (
+                <div key={i}>
+                  <SignalBar
+                    asset={sig.asset}
+                    direction={sig.direction}
+                    strength={sig.strength}
+                    reason={sig.reason}
+                    platform={sig.platform}
+                    overnight_risk={sig.overnight_risk}
+                    onClick={() => { setDetailIndex(i); setScreen('detail'); }}
+                  />
+                  {hasId && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 12px 6px', borderBottom: '1px solid #0d0d0d' }}>
+                      {marked ? (
+                        <span style={{ fontSize: 9, fontFamily: 'monospace', color: OUTCOMES.find(o => o.key === marked)?.color ?? '#888', background: '#ffffff08', border: `1px solid ${OUTCOMES.find(o => o.key === marked)?.color ?? '#888'}44`, borderRadius: 3, padding: '2px 8px' }}>
+                          {OUTCOMES.find(o => o.key === marked)?.label ?? marked}
+                        </span>
+                      ) : (
+                        OUTCOMES.map((o) => (
+                          <button
+                            key={o.key}
+                            onClick={() => markOutcome(sig.asset, o.key)}
+                            style={{ fontSize: 9, fontFamily: 'monospace', color: '#444', background: 'none', border: '1px solid #1a1a1a', borderRadius: 3, padding: '2px 6px', minHeight: 36, cursor: 'pointer' }}
+                          >
+                            {o.label}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -354,8 +412,13 @@ export default function SignalBotApp() {
           {isScanning ? '● SKANOWANIE...' : scanAge ? `skan ${scanAge}` : '⟳ skan'}
         </span>
 
-        {/* Swipe hint */}
-        <span style={{ color: '#333' }}>← detale</span>
+        {/* History button */}
+        <button
+          onClick={() => setScreen('history')}
+          style={{ color: '#444', background: 'none', border: 'none', fontSize: 11, fontFamily: 'monospace', minHeight: 44, minWidth: 60, cursor: 'pointer', padding: 0 }}
+        >
+          📊 hist
+        </button>
       </div>
 
       {/* ── Scan error toast ────────────────────────────────────────────────── */}

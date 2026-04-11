@@ -64,11 +64,11 @@ async function saveToDb(params: {
   scanDurationMs: number;
   analyzeeDurationMs: number;
   totalDurationMs: number;
-}) {
+}): Promise<Record<string, string>> {
   const db = getSupabase();
   if (!db) {
     console.warn('DB: getSupabase() returned null — env vars missing, skipping save');
-    return;
+    return {};
   }
 
   const { sessionName, timeCtx, rawScan, rawAnalysis, scanDurationMs, analyzeeDurationMs, totalDurationMs } = params;
@@ -101,14 +101,16 @@ async function saveToDb(params: {
 
   if (scanErr) {
     console.error('DB scans insert error:', scanErr.code, scanErr.message);
-    return;
+    return {};
   }
 
   const scanId = scanRow.id as string;
   console.log(`DB: scan row created — id=${scanId}`);
 
-  // 2. Insert individual signals
+  // 2. Insert individual signals — select back id + asset so we can return the mapping
   const signals: any[] = analysis.signals ?? [];
+  const signalIdMap: Record<string, string> = {}; // asset → supabase uuid
+
   if (signals.length > 0) {
     const signalRows = signals.map((s) => ({
       scan_id:          scanId,
@@ -126,9 +128,19 @@ async function saveToDb(params: {
       session_relevant: s.session_relevant ?? null,
     }));
 
-    const { error: sigErr } = await db.from('signals').insert(signalRows);
-    if (sigErr) console.error('DB signals insert error:', sigErr.code, sigErr.message);
-    else console.log(`DB: ${signalRows.length} signals inserted`);
+    const { data: insertedSignals, error: sigErr } = await db
+      .from('signals')
+      .insert(signalRows)
+      .select('id, asset');
+
+    if (sigErr) {
+      console.error('DB signals insert error:', sigErr.code, sigErr.message);
+    } else {
+      console.log(`DB: ${signalRows.length} signals inserted`);
+      for (const row of insertedSignals ?? []) {
+        if (row.asset) signalIdMap[row.asset] = row.id;
+      }
+    }
   }
 
   // 3. Insert source_scores from accounts_checked
@@ -169,14 +181,16 @@ async function saveToDb(params: {
   }
 
   console.log(`DB saved: scan ${scanId} | ${signals.length} signals | ${sourceRows.length} source rows`);
+  return signalIdMap;
 }
 
 // Wrap saveToDb so any thrown exception is logged with a stack trace
-async function saveToDbSafe(params: Parameters<typeof saveToDb>[0]) {
+async function saveToDbSafe(params: Parameters<typeof saveToDb>[0]): Promise<Record<string, string>> {
   try {
-    await saveToDb(params);
+    return await saveToDb(params);
   } catch (e: any) {
     console.error('DB saveToDb exception:', e?.message ?? e, e?.stack ?? '');
+    return {};
   }
 }
 
@@ -293,7 +307,8 @@ export async function POST(req: NextRequest) {
     let parsedAnalysis: unknown = {};
     try { parsedAnalysis = JSON.parse(extractJson(text)); } catch {}
 
-    saveToDbSafe({
+    // Await save so we can return signal IDs to the client
+    const signalIds = await saveToDbSafe({
       sessionName,
       timeCtx,
       rawScan:             parsedScan,
@@ -303,8 +318,8 @@ export async function POST(req: NextRequest) {
       totalDurationMs:     totalDuration,
     });
 
-    // Normalise to { content: [{ type: "text", text: "..." }] } — unchanged from before
-    return NextResponse.json({ content: [{ type: "text", text }] });
+    // Return analysis text + signal ID map (asset → supabase uuid)
+    return NextResponse.json({ content: [{ type: "text", text }], signal_ids: signalIds });
 
   } catch (e: any) {
     const totalDuration = Date.now() - totalStart;
