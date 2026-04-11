@@ -34,6 +34,9 @@ export interface ScanSignal {
   platform?: 'IG' | 'CRYPTO' | 'BOTH';
   overnight_risk?: 'HIGH' | 'MEDIUM' | 'LOW';
   session_relevant?: boolean;
+  source_accuracy?: number;
+  source_total_signals?: number;
+  source_adjusted?: boolean;
 }
 
 export interface ShareOpportunity {

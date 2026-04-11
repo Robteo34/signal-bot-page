@@ -10,23 +10,28 @@ interface Props {
   direction: string;
   strength: number;
   reason?: string;
+  source?: string;
+  source_accuracy?: number;
+  source_total_signals?: number;
+  source_adjusted?: boolean;
   platform?: 'IG' | 'CRYPTO' | 'BOTH';
   overnight_risk?: 'HIGH' | 'MEDIUM' | 'LOW';
   onClick?: () => void;
 }
 
-export default function SignalBar({ asset, direction, strength, platform, overnight_risk, onClick }: Props) {
+export default function SignalBar({ asset, direction, strength, source, source_accuracy, source_total_signals, source_adjusted, platform, overnight_risk, onClick }: Props) {
   const color = DIR_COLOR[direction.toUpperCase()] ?? '#888';
   const filled = Math.max(0, Math.min(10, Math.round(strength)));
   const empty = 10 - filled;
   const isCrypto = platform === 'CRYPTO';
 
   return (
+    <>
     <div
       className="flex items-center gap-2 px-3 font-mono"
       style={{
         minHeight: 56,
-        borderBottom: '1px solid #1A1A1A',
+        borderBottom: source_adjusted ? 'none' : '1px solid #1A1A1A',
         cursor: onClick ? 'pointer' : undefined,
         backgroundColor: isCrypto ? '#0a0814' : undefined,
       }}
@@ -104,5 +109,23 @@ export default function SignalBar({ asset, direction, strength, platform, overni
         />
       )}
     </div>
+
+    {/* Source accuracy badge — only shown when history adjusted this signal */}
+    {source_adjusted && source_accuracy != null && source_total_signals != null && (
+      <div style={{ padding: '1px 12px 4px', borderBottom: '1px solid #111' }}>
+        <span style={{
+          fontSize: 8,
+          fontFamily: 'monospace',
+          color: source_accuracy >= 70 ? '#5DCAA5' : source_accuracy < 40 ? '#D85A30' : '#EF9F27',
+          background: '#ffffff05',
+          border: `1px solid ${source_accuracy >= 70 ? '#5DCAA530' : source_accuracy < 40 ? '#D85A3030' : '#EF9F2730'}`,
+          borderRadius: 3,
+          padding: '1px 5px',
+        }}>
+          📊 {source} {source_accuracy}% accuracy ({source_total_signals} signals)
+        </span>
+      </div>
+    )}
+    </>
   );
 }

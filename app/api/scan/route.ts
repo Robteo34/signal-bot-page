@@ -8,6 +8,7 @@ import {
   type TimeContext,
 } from "@/lib/prompts";
 import { getSupabase } from "@/lib/supabase";
+import { adjustConfidenceBySourceHistory } from "@/lib/sourceScoring";
 
 export const maxDuration = 120; // covers two sequential xAI calls
 
@@ -304,8 +305,20 @@ export async function POST(req: NextRequest) {
     const text: string = analyzeData.choices?.[0]?.message?.content ?? "";
 
     // ── Persist to Supabase (non-blocking) ───────────────────────────────────
-    let parsedAnalysis: unknown = {};
+    let parsedAnalysis: Record<string, any> = {};
     try { parsedAnalysis = JSON.parse(extractJson(text)); } catch {}
+
+    // ── Adjust signal confidence by source history ────────────────────────────
+    if (Array.isArray(parsedAnalysis.signals) && parsedAnalysis.signals.length > 0) {
+      try {
+        parsedAnalysis.signals = await adjustConfidenceBySourceHistory(parsedAnalysis.signals);
+      } catch (e: any) {
+        console.warn('sourceScoring adjustment failed (non-fatal):', e?.message ?? e);
+      }
+    }
+
+    // Rebuild text with adjusted signals so the client JSON matches
+    const adjustedText = JSON.stringify(parsedAnalysis);
 
     // Await save so we can return signal IDs to the client
     const signalIds = await saveToDbSafe({
@@ -318,8 +331,8 @@ export async function POST(req: NextRequest) {
       totalDurationMs:     totalDuration,
     });
 
-    // Return analysis text + signal ID map (asset → supabase uuid)
-    return NextResponse.json({ content: [{ type: "text", text }], signal_ids: signalIds });
+    // Return adjusted analysis + signal ID map (asset → supabase uuid)
+    return NextResponse.json({ content: [{ type: "text", text: adjustedText }], signal_ids: signalIds });
 
   } catch (e: any) {
     const totalDuration = Date.now() - totalStart;

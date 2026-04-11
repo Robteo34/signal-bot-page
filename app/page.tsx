@@ -325,6 +325,10 @@ export default function SignalBotApp() {
                     direction={sig.direction}
                     strength={sig.strength}
                     reason={sig.reason}
+                    source={sig.source}
+                    source_accuracy={sig.source_accuracy}
+                    source_total_signals={sig.source_total_signals}
+                    source_adjusted={sig.source_adjusted}
                     platform={sig.platform}
                     overnight_risk={sig.overnight_risk}
                     onClick={() => { setDetailIndex(i); setScreen('detail'); }}
