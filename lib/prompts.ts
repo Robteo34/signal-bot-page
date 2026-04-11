@@ -358,14 +358,14 @@ Return ONLY this exact JSON — fill every field with real current analysis:
   "entry": "specific price or trigger",
   "stop": "specific stop loss price",
   "target": "take profit with R:R",
-  "reason": "max 7 słów po polsku",
-  "narrative": "dominujący temat rynkowy max 15 słów",
-  "session_plan": "co obserwować w tej sesji max 15 słów",
+  "reason": "2-3 zdania po polsku — MUSISZ podać źródło (@handle lub outlet) i co konkretnie znalazłeś",
+  "narrative": "2-3 zdania — główny temat rynkowy i dlaczego",
+  "session_plan": "2-3 zdania — co obserwować",
   "wait_mode_reason": "dlaczego czekać jeśli brak setupu max 10 słów",
   "x_sentiment": {
     "overall": "BULLISH|BEARISH|NEUTRAL",
     "trending_topics": ["temat1", "temat2", "temat3"],
-    "key_tweet_insight": "najważniejsza informacja z X teraz max 12 słów"
+    "key_tweet_insight": "1-2 zdania — najważniejszy tweet z linkiem do @handle"
   },
   "signals": [
     {
@@ -376,7 +376,7 @@ Return ONLY this exact JSON — fill every field with real current analysis:
       "entry": "specific price",
       "stop": "specific stop loss",
       "target": "take profit with R:R ratio",
-      "reason": "2-3 sentences in Polish explaining the setup",
+      "reason": "2-3 zdania po polsku — MUSISZ podać źródło (@handle lub outlet) i co konkretnie znalazłeś",
       "source": "@handle or data source that triggered this signal",
       "platform": "IG|CRYPTO",
       "overnight_risk": "HIGH|MEDIUM|LOW",
@@ -386,18 +386,18 @@ Return ONLY this exact JSON — fill every field with real current analysis:
   "skipped_assets": ["FTSE250", "Russell2000", "...all assets from IG universe with no actionable setup"],
   "top_shares": {
     "uk": [
-      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"","strength":0},
-      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"","strength":0},
-      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"","strength":0}
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0},
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0},
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0}
     ],
     "us": [
-      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"","strength":0},
-      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"","strength":0},
-      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"","strength":0}
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0},
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0},
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0}
     ],
     "eu": [
-      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"","strength":0},
-      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"","strength":0}
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0},
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0}
     ]
   },
   "macro_events_today": [
