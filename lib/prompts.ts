@@ -735,12 +735,21 @@ COMMODITIES MANDATORY: Gold AND Silver AND Brent Oil in signals every session. A
 
 ═══ SCREENER-DRIVEN SIGNALS ═══
 You may receive market screener data showing top movers, gainers, and losers.
-You may also receive verified technical data (RSI, price) for selected tickers.
+You may also receive verified technical data (RSI, price, volume profile) for selected tickers.
 USE this data to generate share signals — these are REAL opportunities, not guesses.
 If a stock is a top loser AND has RSI<30 → strong LONG reversal candidate.
 If a stock is a top gainer AND has RSI>70 → potential SHORT fade candidate.
 If a stock has unusual volume → investigate and include in top_shares.
 Prioritize screener-found tickers over generic share analysis.
+
+VOLUME PROFILE RULES:
+- Volume >200% of 20-day average = UNUSUAL — institutional activity, strong signal, boost strength +1
+- Volume >130% avg + price rising = accumulation (LONG bias)
+- Volume >130% avg + price falling = distribution (SHORT bias)
+- Volume <50% avg = no conviction — cap signal strength at 5, likely chop
+- Volume trend INCREASING for 3+ days = building momentum, follow direction
+- Volume trend DECREASING = momentum fading, watch for reversal
+Always mention volume profile in share catalyst descriptions.
 
 ═══ SIGNAL STRENGTH 1–10 — SCORING CRITERIA ═══
 Score based on the quality of data in the provided scan results:
