@@ -7,7 +7,7 @@ import {
   buildAnalyzeUserPrompt,
   type TimeContext,
 } from "@/lib/prompts";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 
 export const maxDuration = 120;
 
@@ -65,13 +65,16 @@ async function saveToDb(params: {
   analyzeeDurationMs: number;
   totalDurationMs: number;
 }) {
+  const db = getSupabase();
+  if (!db) return; // env vars not set — skip silently (already warned in getSupabase)
+
   const { sessionName, timeCtx, rawScan, rawAnalysis, scanDurationMs, analyzeeDurationMs, totalDurationMs } = params;
 
   const analysis = rawAnalysis as Record<string, any>;
   const scan     = rawScan     as Record<string, any>;
 
   // 1. Insert scan row
-  const { data: scanRow, error: scanErr } = await supabase
+  const { data: scanRow, error: scanErr } = await db
     .from('scans')
     .insert({
       session_name:        sessionName,
@@ -117,7 +120,7 @@ async function saveToDb(params: {
       session_relevant: s.session_relevant ?? null,
     }));
 
-    const { error: sigErr } = await supabase.from('signals').insert(signalRows);
+    const { error: sigErr } = await db.from('signals').insert(signalRows);
     if (sigErr) console.error('DB signals insert error:', sigErr.message);
   }
 
@@ -153,7 +156,7 @@ async function saveToDb(params: {
   }
 
   if (sourceRows.length > 0) {
-    const { error: srcErr } = await supabase.from('source_scores').insert(sourceRows);
+    const { error: srcErr } = await db.from('source_scores').insert(sourceRows);
     if (srcErr) console.error('DB source_scores insert error:', srcErr.message);
   }
 
