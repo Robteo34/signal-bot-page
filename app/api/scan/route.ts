@@ -9,6 +9,7 @@ import {
 } from "@/lib/prompts";
 import { getSupabase } from "@/lib/supabase";
 import { adjustConfidenceBySourceHistory } from "@/lib/sourceScoring";
+import { getMarketData } from "@/lib/alphaVantage";
 
 export const maxDuration = 120; // covers two sequential xAI calls
 
@@ -265,8 +266,21 @@ export async function POST(req: NextRequest) {
       scanPayload = scanRawText;
     }
 
+    // ── Alpha Vantage technical data (non-blocking, best-effort) ─────────────
+    let technicalData = '';
+    try {
+      technicalData = await getMarketData();
+      console.log('Alpha Vantage:', technicalData.slice(0, 120));
+    } catch (e: any) {
+      console.warn('Alpha Vantage fetch failed (non-fatal):', e?.message ?? e);
+    }
+
     // ── Call 2: ANALYZE ───────────────────────────────────────────────────────
     const analyzeStart = Date.now();
+
+    const analyzePayload = technicalData
+      ? `${technicalData}\n\n${scanPayload}`
+      : scanPayload;
 
     const analyzeRes = await fetch(XAI_URL, {
       method: "POST",
@@ -282,7 +296,7 @@ export async function POST(req: NextRequest) {
           },
           {
             role: "user",
-            content: buildAnalyzeUserPrompt(scanPayload, sessionName),
+            content: buildAnalyzeUserPrompt(analyzePayload, sessionName),
           },
         ],
       }),

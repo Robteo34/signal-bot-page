@@ -567,6 +567,19 @@ Run each of these searches and report results:
 7. "#silver OR #copper OR #natgas OR #platinum" — metals and energy sentiment
 8. "FTSE unusual volume OR FTSE breakout OR RNS" — UK share scanner
 
+═══ SHARE TECHNICAL SCANNER — EVERY SESSION ═══
+For UK shares (FTSE100/250) and US shares (S&P500/Nasdaq100), search X for:
+- Shares closing at key support/resistance levels
+- Unusual volume vs 20-day average (institutional interest)
+- Shares with earnings in the next 5 trading days (catalyst)
+- Friday/previous session gap ups or gap downs (follow-through potential)
+- RSI extremes discussed by analysts: oversold (<30) = bounce candidate, overbought (>70) = short candidate
+- Shares near 52-week high (breakout) or 52-week low (reversal)
+- Analyst upgrades/downgrades posted today
+- Insider buying/selling reported today
+
+For EACH share found, report: ticker, name, key technical level, catalyst, and whether analysts lean LONG or SHORT.
+
 ═══ INTELLIGENCE CATEGORY SEARCHES ═══
 Search X for content matching these terms. Report what you find — do NOT analyze.
 
@@ -688,14 +701,28 @@ US SHARES: S&P500 + Nasdaq100 top movers → TOP 3
 EU SHARES: DAX + CAC40 top movers → TOP 2
 CRYPTO (non-IG): BTC/USD, ETH/USD — sentiment only
 
-═══ MANDATORY COVERAGE RULES ═══
-You MUST scan and report on these assets EVERY session (even if WAIT):
-- COMMODITIES: Gold AND Silver AND Brent Oil — always all three. Also check: Copper, Natural Gas, Platinum — include if any movement or news.
-- UK SHARES: You MUST return at minimum 2 UK shares in top_shares.uk. Scan FTSE100 + FTSE250 for: unusual volume, 52-week highs/lows, RNS announcements, broker upgrades/downgrades, sector momentum. 'Brak okazji' is NOT acceptable — there are always shares moving. If nothing is breaking out, report the highest-volume FTSE100 movers today with direction WAIT.
-- US SHARES: You MUST return at minimum 2 US shares in top_shares.us. Scan S&P500 + Nasdaq100 for: pre/post-market movers, earnings reactions, analyst actions, unusual options activity. Same rule — never return empty.
-- EU SHARES: Return at minimum 1 EU share from DAX or CAC40.
+═══ TOP SHARES — MANDATORY WATCHLIST ═══
+Generate a watchlist for day trading on IG. EVERY session, including weekends for Monday prep:
 
-If you genuinely cannot find data for a share (e.g. weekend, market closed), return the share with direction WAIT, strength 1, and reason 'Rynek zamknięty — brak danych'.
+top_shares.uk: minimum 3 UK shares from FTSE100/250
+top_shares.us: minimum 3 US shares from S&P500/Nasdaq100
+top_shares.eu: minimum 2 EU shares from DAX/CAC40
+
+For EACH share you MUST provide:
+- ticker: IG ticker symbol
+- name: company name
+- direction: LONG or SHORT (pick one based on setup)
+- catalyst: 1 sentence max — WHY this trade (e.g. 'RSI 28 + earnings Tue = bounce play')
+- strength: 1-10 using same confidence framework
+- key_level: specific price level to watch (support for LONG, resistance for SHORT)
+- setup_type: one of REVERSAL | BREAKOUT | MOMENTUM | EARNINGS | GAP_FILL | TECHNICAL
+
+On weekends: analyze Friday's close and generate Monday opening watchlist.
+On weekdays: analyze current session live data.
+
+NEVER return 'brak okazji' or 'brak danych' with no analysis. There are ALWAYS shares setting up — find them. If market is closed, analyze the LAST session's close and prepare next-session watchlist.
+
+COMMODITIES MANDATORY: Gold AND Silver AND Brent Oil in signals every session. Also check Copper, Natural Gas, Platinum — include if any movement or news.
 
 ═══ SIGNAL STRENGTH 1–10 — SCORING CRITERIA ═══
 Score based on the quality of data in the provided scan results:
@@ -738,6 +765,7 @@ ${scanData}
 Based ONLY on this scan data, generate your full market analysis. Do not search for additional data.
 
 SIGNALS RULES: Return 3-8 signals. Only include assets where the scan found real data with strength >= 5. List all skipped assets in "skipped_assets".
+TOP SHARES RULES: Return minimum 3 UK, 3 US, 2 EU shares every session. Include key_level and setup_type for each. Never return empty arrays.
 BREAKING OSINT RULES: Only include breaking_osint entries for accounts listed in accounts_checked.with_posts. Return [] if none.
 INTELLIGENCE FEED RULES: Only include intelligence_feed entries with credibility >= 5 from the scan findings. Return [] if none.
 TOP INTELLIGENCE ACCOUNTS RULES: Only newly discovered accounts not in the verified list. Return [] if none.
@@ -780,18 +808,18 @@ Return ONLY this exact JSON:
   "skipped_assets": ["assets from IG universe with no actionable setup this session"],
   "top_shares": {
     "uk": [
-      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0},
-      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0},
-      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0}
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"max 1 sentence why","strength":0,"key_level":"price","setup_type":"REVERSAL|BREAKOUT|MOMENTUM|EARNINGS|GAP_FILL|TECHNICAL"},
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"max 1 sentence why","strength":0,"key_level":"price","setup_type":"REVERSAL|BREAKOUT|MOMENTUM|EARNINGS|GAP_FILL|TECHNICAL"},
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"max 1 sentence why","strength":0,"key_level":"price","setup_type":"REVERSAL|BREAKOUT|MOMENTUM|EARNINGS|GAP_FILL|TECHNICAL"}
     ],
     "us": [
-      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0},
-      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0},
-      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0}
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"max 1 sentence why","strength":0,"key_level":"price","setup_type":"REVERSAL|BREAKOUT|MOMENTUM|EARNINGS|GAP_FILL|TECHNICAL"},
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"max 1 sentence why","strength":0,"key_level":"price","setup_type":"REVERSAL|BREAKOUT|MOMENTUM|EARNINGS|GAP_FILL|TECHNICAL"},
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"max 1 sentence why","strength":0,"key_level":"price","setup_type":"REVERSAL|BREAKOUT|MOMENTUM|EARNINGS|GAP_FILL|TECHNICAL"}
     ],
     "eu": [
-      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0},
-      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"1 sentence with source","strength":0}
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"max 1 sentence why","strength":0,"key_level":"price","setup_type":"REVERSAL|BREAKOUT|MOMENTUM|EARNINGS|GAP_FILL|TECHNICAL"},
+      {"ticker":"","name":"","direction":"LONG|SHORT","catalyst":"max 1 sentence why","strength":0,"key_level":"price","setup_type":"REVERSAL|BREAKOUT|MOMENTUM|EARNINGS|GAP_FILL|TECHNICAL"}
     ]
   },
   "macro_events_today": [

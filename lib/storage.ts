@@ -45,6 +45,8 @@ export interface ShareOpportunity {
   direction: string;
   catalyst: string;
   strength: number;
+  key_level?: string;
+  setup_type?: 'REVERSAL' | 'BREAKOUT' | 'MOMENTUM' | 'EARNINGS' | 'GAP_FILL' | 'TECHNICAL';
 }
 
 export interface MacroEvent {
