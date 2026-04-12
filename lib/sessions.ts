@@ -189,6 +189,18 @@ export function getNextEvent(now: Date = new Date()): NextEvent {
   const t = toUKTime(now);
   const nyOpen = getNYOpenHour(now);
 
+  // Resolve UK day-of-week (BST-aware)
+  const offset  = isBST(now) ? 1 : 0;
+  const ukDate  = new Date(now.getTime() + offset * 3600_000);
+  const ukDay   = ukDate.getUTCDay(); // 0=Sun, 6=Sat
+
+  if (ukDay === 6 || ukDay === 0) {
+    // Minutes until Monday 08:00 BST/GMT (London open)
+    const daysUntilMonday = ukDay === 6 ? 2 : 1;
+    const hoursUntilMonday = daysUntilMonday * 24 - t + 8;
+    return { label: 'Markets reopen Monday', minutes: Math.round(hoursUntilMonday * 60) };
+  }
+
   const checkpoints = [
     { label: 'Londyn Open', time: 8 },
     { label: 'Pre-NY', time: 13 },
