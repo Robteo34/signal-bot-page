@@ -10,20 +10,38 @@ export async function discoverHotTopics(): Promise<string[]> {
 
     const currentDate = new Date().toISOString().split('T')[0];
 
-    const prompt = `It is ${currentDate}. You are a market intelligence analyst. Search the web and identify the 4-5 HOTTEST ongoing geopolitical, military, or macro-economic topics RIGHT NOW that are moving financial markets (oil, gold, forex, indices).
+    const prompt = `It is ${currentDate}. You are a market intelligence analyst for active traders (day traders, swing traders) and financial markets investors.
 
-Focus on:
-- Active military conflicts or naval operations
-- Central bank decisions imminent or just made
-- Major diplomatic summits or talks happening NOW
-- Energy supply disruptions
-- Currency crises
+Search the web and identify the 4-6 HOTTEST topics RIGHT NOW (last 24-48h) that are DIRECTLY moving prices on:
+- Forex pairs (GBP/USD, EUR/USD, USD/JPY, etc.)
+- Commodities (Gold, Silver, Brent Oil, Copper, Natural Gas)
+- Indices (SPX500, Nasdaq, FTSE100, DAX, Nikkei)
+- Major stocks (US mega-caps, UK blue chips, European giants)
+- Crypto (BTC, ETH)
+- Bond yields (US 10Y, UK gilts)
 
-Return ONLY a JSON array of short topic strings (3-6 words each). No explanation.
+Focus on actionable topics where a trader could take a position TODAY or prepare for Monday open. Categories to search:
 
-Example format: ["Strait of Hormuz blockade", "Fed rate decision May", "China Taiwan tension"]
+1. CENTRAL BANK ACTION — Fed/BOE/ECB/BOJ decisions, speeches, minutes, rate changes, QT/QE shifts
+2. MACRO RELEASES — CPI, NFP, GDP, PMI surprises, inflation data
+3. GEOPOLITICAL → OIL — Middle East conflicts, Hormuz, Russia sanctions, OPEC decisions, pipeline events
+4. GEOPOLITICAL → RISK — NATO escalations, China-Taiwan, trade wars, tariffs affecting supply chains
+5. EARNINGS SURPRISES — Major company beats/misses that move sectors (tech, banks, energy)
+6. CRYPTO CATALYSTS — ETF flows, regulatory news, whale movements, on-chain events
+7. CURRENCY CRISES — Sharp FX moves, intervention, political instability affecting major currencies
+8. COMMODITY SHOCKS — Supply disruptions, weather events affecting grains, metals, energy
 
-Search the web first, then return the array.`;
+DO NOT include:
+- Pure political drama without market impact
+- Historical events (>48h old) unless still actively developing
+- General news (elections not imminent, domestic scandals)
+- Sports, entertainment, celebrity news
+
+Return ONLY a JSON array of short topic strings (3-6 words each), ranked by trading relevance (most market-moving first).
+
+Example format: ["Fed May rate decision", "Hormuz blockade oil spike", "TSLA earnings Q1 beat", "BTC ETF record inflows", "Yen intervention BOJ"]
+
+Search the web thoroughly before returning. Each topic must have VERIFIABLE recent news (within 48h) moving at least one major asset.`;
 
     const res = await fetch(XAI_URL, {
       method:  'POST',
