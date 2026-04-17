@@ -14,7 +14,8 @@ import { screenMarkets } from "@/lib/marketScreener";
 import { fetchSessionPrices } from "@/lib/twelveData";
 import { fetchSessionNews } from "@/lib/newsApi";
 import { fetchMacroCalendar } from "@/lib/economicCalendar";
-import { fetchOSINTEvents } from "@/lib/gdelt";
+import { fetchOSINTEvents, generateTopicQueries } from "@/lib/gdelt";
+import { discoverHotTopics } from "@/lib/topicDiscovery";
 
 export const maxDuration = 120; // covers two sequential xAI calls
 
@@ -247,6 +248,12 @@ export async function POST(req: NextRequest) {
     const timeCtx = buildTimeContext();
     const JSON_ONLY = "RESPOND WITH ONLY VALID JSON. No markdown fences. No backticks. No text before { or after }.";
 
+    // ── Step 0.5: Topic discovery preflight (10s cap, graceful fallback) ────
+    const hotTopics = await discoverHotTopics().catch(() => []);
+    console.log(`Hot topics discovered: ${JSON.stringify(hotTopics)}`);
+    const dynamicQueries = generateTopicQueries(hotTopics);
+    console.log(`Dynamic GDELT queries: ${Object.keys(dynamicQueries).join(', ')}`);
+
     // ── Step 0: Screener + live prices + news in parallel, 25s hard cap ─────
     const dataTimeout = new Promise<[string, string, string, string, string]>((resolve) =>
       setTimeout(() => { console.warn('Step 0: data gathering timed out after 25s, proceeding'); resolve(['', '', '', '', '']); }, 25_000)
@@ -256,7 +263,7 @@ export async function POST(req: NextRequest) {
       fetchSessionPrices(sessionName).catch((e: any)  => { console.warn('Twelve Data failed:', e?.message ?? e); return ''; }),
       fetchSessionNews(sessionName).catch((e: any)    => { console.warn('NewsAPI failed:', e?.message ?? e); return ''; }),
       fetchMacroCalendar().catch((e: any)             => { console.warn('Forex Factory failed:', e?.message ?? e); return ''; }),
-      fetchOSINTEvents(sessionName).catch((e: any)    => { console.warn('GDELT failed:', e?.message ?? e); return ''; }),
+      fetchOSINTEvents(sessionName, dynamicQueries).catch((e: any) => { console.warn('GDELT failed:', e?.message ?? e); return ''; }),
     ]);
     const [screenerData, livePrices, recentNews, macroCalendar, osintEvents] = await Promise.race([dataFetch, dataTimeout]);
     console.log(`Data sources: screener=${screenerData?.length || 0}, prices=${livePrices?.length || 0}, news=${recentNews?.length || 0}, macro=${macroCalendar?.length || 0}, osint=${osintEvents?.length || 0}`);
@@ -283,7 +290,7 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: "system",
-            content: [buildScanSystemPrompt(sessionName, timeCtx, livePrices, recentNews, macroCalendar, osintEvents), JSON_ONLY].join("\n\n"),
+            content: [buildScanSystemPrompt(sessionName, timeCtx, livePrices, recentNews, macroCalendar, osintEvents, hotTopics), JSON_ONLY].join("\n\n"),
           },
           {
             role: "user",

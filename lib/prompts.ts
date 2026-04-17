@@ -521,7 +521,7 @@ Return ONLY this exact JSON — fill every field with real current analysis:
 // Call 2 (ANALYZE): receive raw data, generate signals → buildAnalyzeSystemPrompt / buildAnalyzeUserPrompt
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function buildScanSystemPrompt(sessionName: SessionName, timeCtx: TimeContext, livePrices?: string, recentNews?: string, macroCalendar?: string, osintEvents?: string): string {
+export function buildScanSystemPrompt(sessionName: SessionName, timeCtx: TimeContext, livePrices?: string, recentNews?: string, macroCalendar?: string, osintEvents?: string, hotTopics?: string[]): string {
   const isWeekend = timeCtx.ukDay === 'Saturday' || timeCtx.ukDay === 'Sunday';
   const weekendScanNote = isWeekend ? `
 ═══ WEEKEND SCAN MODE ═══
@@ -539,8 +539,11 @@ Do NOT report equity market price action — exchanges are closed.
   const newsBlock     = recentNews    ? `${recentNews}\n\nVERIFIED RECENT NEWS provided above. Use these for context but ALSO continue searching web for additional intel that the news API may have missed (e.g. options flow, macro data not covered by mainstream outlets).\n\n` : '';
   const calendarBlock = macroCalendar ? `${macroCalendar}\n\n` : '';
   const osintBlock    = osintEvents   ? `${osintEvents}\n\n`   : '';
+  const topicsBlock   = hotTopics && hotTopics.length > 0
+    ? `═══ IDENTIFIED HOT TOPICS (today) ═══\nCurrent market-moving themes: ${hotTopics.join(' | ')}\nFocus your analysis on how these themes affect asset prices.\n═══\n\n`
+    : '';
 
-  return `${priceBlock}${newsBlock}${calendarBlock}${osintBlock}You are a financial data SCANNER. Your job is to SEARCH and COLLECT only. Do NOT analyze, do NOT generate trading signals, do NOT provide recommendations. Just report what you found.
+  return `${priceBlock}${newsBlock}${calendarBlock}${osintBlock}${topicsBlock}You are a financial data SCANNER. Your job is to SEARCH and COLLECT only. Do NOT analyze, do NOT generate trading signals, do NOT provide recommendations. Just report what you found.
 
 ═══ AUTHORITATIVE DATE/TIME ═══
 Date: ${timeCtx.ukDay}, ${timeCtx.ukDate}

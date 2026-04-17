@@ -11,14 +11,33 @@ interface GdeltEvent {
 
 const GDELT_BASE = 'https://api.gdeltproject.org/api/v2/doc/doc';
 
-// Topic queries that matter for the 7 intelligence categories
-const GDELT_QUERIES: Record<string, string> = {
-  MILITARY:     '(NATO OR Russia OR Ukraine OR China OR Taiwan OR Iran OR Israel) AND (military OR troops OR airspace OR missile OR drone OR fighter OR deployment)',
-  GEOPOLITICAL: '("Article 4" OR "Article 5" OR sanctions OR embargo OR diplomatic) AND (crisis OR emergency OR escalation)',
-  ENERGY:       '(oil OR gas OR LNG OR pipeline OR tanker OR OPEC OR Hormuz OR Suez) AND (disruption OR attack OR shutdown OR outage)',
-  MACRO:        '(Fed OR FOMC OR Powell OR BOE OR ECB) AND (rate OR decision OR meeting OR pivot)',
-  SUPPLY:       '(supply chain OR port OR shipping OR Baltic OR freight) AND (disruption OR closure OR backlog)',
+// Fallback static queries (used if topic discovery fails or returns nothing)
+export const FALLBACK_QUERIES: Record<string, string> = {
+  MILITARY:     '(NATO OR Russia OR Ukraine OR China OR Iran OR Israel OR Hormuz OR blockade) AND (military OR troops OR missile OR drone OR strike OR deployment)',
+  GEOPOLITICAL: '(sanctions OR embargo OR diplomatic OR summit OR crisis OR escalation) AND (announcement OR meeting OR talks)',
+  ENERGY:       '(oil OR gas OR LNG OR pipeline OR tanker OR OPEC OR Hormuz OR Suez OR Strait) AND (disruption OR attack OR shutdown OR blockade OR surge)',
+  MACRO:        '(Fed OR FOMC OR Powell OR BOE OR ECB OR BOJ) AND (rate OR decision OR meeting OR pivot OR hike OR cut)',
+  SUPPLY:       '(supply chain OR port OR shipping OR freight OR tanker) AND (disruption OR closure OR seizure OR sanctions)',
 };
+
+export function generateTopicQueries(hotTopics: string[]): Record<string, string> {
+  if (!hotTopics || hotTopics.length === 0) return FALLBACK_QUERIES;
+
+  const dynamicQueries: Record<string, string> = {};
+
+  for (const topic of hotTopics.slice(0, 5)) {
+    const sanitized = topic.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+    if (sanitized.length < 3) continue;
+    const key = topic.slice(0, 20).toUpperCase().replace(/\s+/g, '_');
+    dynamicQueries[key] =
+      `(${sanitized}) AND (crisis OR escalation OR attack OR meeting OR announcement OR deployment OR sanctions OR disruption OR strike)`;
+  }
+
+  // Always include macro as a stable category
+  dynamicQueries['MACRO'] = FALLBACK_QUERIES.MACRO;
+
+  return Object.keys(dynamicQueries).length > 1 ? dynamicQueries : FALLBACK_QUERIES;
+}
 
 async function gdeltQuery(query: string, timespan = '4h'): Promise<GdeltEvent[]> {
   try {
@@ -53,14 +72,14 @@ async function gdeltQuery(query: string, timespan = '4h'): Promise<GdeltEvent[]>
         publishedAt = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}T${dateStr.slice(9, 11)}:${dateStr.slice(11, 13)}:${dateStr.slice(13, 15)}Z`;
       }
       return {
-        title:       a.title       || '',
-        url:         a.url         || '',
-        source:      a.domain      || 'Unknown',
+        title:      a.title          || '',
+        url:        a.url            || '',
+        source:     a.domain         || 'Unknown',
         publishedAt,
-        ageMinutes:  Math.round((now - new Date(publishedAt).getTime()) / 60000),
-        country:     a.sourcecountry || '',
-        tone:        parseFloat(a.tone) || 0,
-        language:    a.language    || 'English',
+        ageMinutes: Math.round((now - new Date(publishedAt).getTime()) / 60000),
+        country:    a.sourcecountry  || '',
+        tone:       parseFloat(a.tone) || 0,
+        language:   a.language       || 'English',
       };
     });
   } catch (e: any) {
@@ -69,15 +88,12 @@ async function gdeltQuery(query: string, timespan = '4h'): Promise<GdeltEvent[]>
   }
 }
 
-export async function fetchOSINTEvents(_sessionName: string): Promise<string> {
-  // Geopolitics doesn't sleep — run all categories every scan
-  const queriesToRun: [string, string][] = [
-    ['MILITARY',     GDELT_QUERIES.MILITARY],
-    ['GEOPOLITICAL', GDELT_QUERIES.GEOPOLITICAL],
-    ['ENERGY',       GDELT_QUERIES.ENERGY],
-    ['MACRO',        GDELT_QUERIES.MACRO],
-    ['SUPPLY',       GDELT_QUERIES.SUPPLY],
-  ];
+export async function fetchOSINTEvents(
+  _sessionName: string,
+  queries?: Record<string, string>
+): Promise<string> {
+  const queryMap     = queries ?? FALLBACK_QUERIES;
+  const queriesToRun = Object.entries(queryMap).slice(0, 6) as [string, string][];
 
   // Parallel with 10s overall cap
   const fetchPromise = Promise.all(
