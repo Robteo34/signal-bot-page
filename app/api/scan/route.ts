@@ -259,11 +259,12 @@ export async function POST(req: NextRequest) {
       fetchOSINTEvents(sessionName).catch((e: any)    => { console.warn('GDELT failed:', e?.message ?? e); return ''; }),
     ]);
     const [screenerData, livePrices, recentNews, macroCalendar, osintEvents] = await Promise.race([dataFetch, dataTimeout]);
+    console.log(`Data sources: screener=${screenerData?.length || 0}, prices=${livePrices?.length || 0}, news=${recentNews?.length || 0}, macro=${macroCalendar?.length || 0}, osint=${osintEvents?.length || 0}`);
+    console.log(`OSINT preview: ${osintEvents?.slice(0, 200) || 'EMPTY'}`);
     if (screenerData)  console.log('Screener:', screenerData.slice(0, 120));
     if (livePrices)    console.log('Twelve Data: fetched', (livePrices.match(/\n/g) ?? []).length - 4, 'prices');
     if (recentNews)    console.log('NewsAPI: fetched', (recentNews.match(/^\[/mg) ?? []).length, 'articles');
     if (macroCalendar) console.log('Forex Factory: fetched', (macroCalendar.match(/^\[/mg) ?? []).length, 'events');
-    if (osintEvents)   console.log('GDELT: fetched OSINT events');
 
     const scanUserContent = screenerData
       ? `${buildScanUserPrompt(sessionName)}\n\nLIVE SCREENER CONTEXT:\n${screenerData}\nFor each ticker listed above, search X for WHY it is moving and report findings.`

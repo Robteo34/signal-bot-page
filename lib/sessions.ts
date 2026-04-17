@@ -79,8 +79,11 @@ export function getCurrentSession(now: Date = new Date()): Session {
   if (t >= 13 && t < nyOpen) return SESSIONS.PRE_NY;
   if (t >= nyOpen && t < overlapEnd) return SESSIONS.OVERLAP;
   if (t >= overlapEnd && t < 21) return SESSIONS.US_AFTERNOON;
-  if (t >= 21 && t < 22.5) return SESSIONS.EVENING_JOURNAL;
-  return SESSIONS.NIGHT_MODE;
+  if (t >= 21 && t < 23) return SESSIONS.EVENING_JOURNAL;
+  // True night: 23:00–06:00 BST (deep night, minimal mode)
+  // t wraps at 24 so cover both 23-24 and 0-6
+  if (t >= 23 || t < 6) return SESSIONS.NIGHT_MODE;
+  return SESSIONS.ASIA_OVERNIGHT;
 }
 
 export const SESSIONS: Record<SessionName, Session> = {

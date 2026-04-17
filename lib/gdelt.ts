@@ -69,17 +69,15 @@ async function gdeltQuery(query: string, timespan = '4h'): Promise<GdeltEvent[]>
   }
 }
 
-export async function fetchOSINTEvents(sessionName: string): Promise<string> {
+export async function fetchOSINTEvents(_sessionName: string): Promise<string> {
+  // Geopolitics doesn't sleep — run all categories every scan
   const queriesToRun: [string, string][] = [
     ['MILITARY',     GDELT_QUERIES.MILITARY],
     ['GEOPOLITICAL', GDELT_QUERIES.GEOPOLITICAL],
     ['ENERGY',       GDELT_QUERIES.ENERGY],
+    ['MACRO',        GDELT_QUERIES.MACRO],
+    ['SUPPLY',       GDELT_QUERIES.SUPPLY],
   ];
-
-  // Add macro queries during market-heavy sessions
-  if (['PRE_NY', 'OVERLAP', 'US_AFTERNOON'].includes(sessionName)) {
-    queriesToRun.push(['MACRO', GDELT_QUERIES.MACRO]);
-  }
 
   // Parallel with 10s overall cap
   const fetchPromise = Promise.all(
