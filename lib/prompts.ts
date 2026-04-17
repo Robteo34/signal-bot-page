@@ -521,7 +521,7 @@ Return ONLY this exact JSON — fill every field with real current analysis:
 // Call 2 (ANALYZE): receive raw data, generate signals → buildAnalyzeSystemPrompt / buildAnalyzeUserPrompt
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function buildScanSystemPrompt(sessionName: SessionName, timeCtx: TimeContext): string {
+export function buildScanSystemPrompt(sessionName: SessionName, timeCtx: TimeContext, livePrices?: string): string {
   const isWeekend = timeCtx.ukDay === 'Saturday' || timeCtx.ukDay === 'Sunday';
   const weekendScanNote = isWeekend ? `
 ═══ WEEKEND SCAN MODE ═══
@@ -535,7 +535,9 @@ Do NOT report equity market price action — exchanges are closed.
 ═══ END WEEKEND NOTE ═══
 ` : '';
 
-  return `You are a financial data SCANNER. Your job is to SEARCH and COLLECT only. Do NOT analyze, do NOT generate trading signals, do NOT provide recommendations. Just report what you found.
+  const priceBlock = livePrices ? `${livePrices}\n\n` : '';
+
+  return `${priceBlock}You are a financial data SCANNER. Your job is to SEARCH and COLLECT only. Do NOT analyze, do NOT generate trading signals, do NOT provide recommendations. Just report what you found.
 
 ═══ AUTHORITATIVE DATE/TIME ═══
 Date: ${timeCtx.ukDay}, ${timeCtx.ukDate}
@@ -662,7 +664,7 @@ export function buildScanUserPrompt(sessionName: SessionName): string {
   return `Scan all sources for the ${sessionName} session. Search X for each verified account and sentiment query. Check the macro calendar for today. Search each intelligence category. Report everything you find. Return ONLY the JSON format specified.`;
 }
 
-export function buildAnalyzeSystemPrompt(sessionName: SessionName, timeCtx: TimeContext): string {
+export function buildAnalyzeSystemPrompt(sessionName: SessionName, timeCtx: TimeContext, livePrices?: string): string {
   const isWeekend = timeCtx.ukDay === 'Saturday' || timeCtx.ukDay === 'Sunday';
   const weekendRules = isWeekend ? `
 ═══ WEEKEND RULES — MANDATORY ═══
@@ -676,7 +678,9 @@ Today is ${timeCtx.ukDay}. These rules override all other signal generation rule
 ═══ END WEEKEND RULES ═══
 ` : '';
 
-  return `You are a senior market analyst. You are given PRE-COLLECTED scan data. Your job is to ANALYZE this data and generate trading signals. Do NOT search for new data. Work ONLY with what is provided in the user message. If the scan data is SPARSE or EMPTY for a category, do NOT fabricate signals — return fewer signals with honest confidence scores.
+  const priceBlock = livePrices ? `${livePrices}\n\n` : '';
+
+  return `${priceBlock}You are a senior market analyst. You are given PRE-COLLECTED scan data. Your job is to ANALYZE this data and generate trading signals. Do NOT search for new data. Work ONLY with what is provided in the user message. If the scan data is SPARSE or EMPTY for a category, do NOT fabricate signals — return fewer signals with honest confidence scores.
 ${weekendRules}
 ═══ AUTHORITATIVE DATE/TIME ═══
 Date: ${timeCtx.ukDay}, ${timeCtx.ukDate}
@@ -768,10 +772,24 @@ CRITICAL RULES:
 - strength <= 4 → exclude from signals array entirely.
 - EVERY signal reason must reference the specific scan finding: e.g. "@NickTimiraos posted 20min ago that..."
 
+═══ MANDATORY PRICE VERIFICATION ═══
+You have been provided with VERIFIED LIVE PRICES at the top of this prompt.
+These are the ONLY prices you may reference.
+
+Rules:
+1. For entry/stop/target — use prices that are realistic relative to the verified current price.
+2. NEVER quote a price that contradicts the verified data (e.g. saying Gold is $2200 when verified shows $2358).
+3. If an asset is NOT in the verified prices list — do NOT provide specific entry/stop/target. Mark as WAIT with note 'price unverified, awaiting data'.
+4. Stop levels must be within 0.5–2% of current price for normal volatility assets, max 5% for crypto.
+5. Target levels must be realistic — within 1x ATR for intraday, 2x ATR for swing.
+6. ALWAYS include the timestamp of the price you used: 'Entry 2358.20 (price as of [timestamp])'.
+
+Violating these rules makes the signal hallucinated and unusable. Empty signals are better than fake prices.
+
 ═══ ANTI-HALLUCINATION RULES ═══
 You are working ONLY from the scan data provided. These rules are NON-NEGOTIABLE:
 - Do NOT invent data not present in the scan results.
-- Price levels must be based on data in the scan or last known closes — state which.
+- Price levels must be based on the VERIFIED LIVE PRICES above — not estimated or guessed.
 - If scan data says "found_items: 0" for a category → no signals from that category.
 - Empty arrays are valid and honest. Fabricated signals are not.
 - Every signal reason must start with a reference to the scan data that supports it.

@@ -11,6 +11,7 @@ import { getSupabase } from "@/lib/supabase";
 import { adjustConfidenceBySourceHistory } from "@/lib/sourceScoring";
 import { getMarketData } from "@/lib/alphaVantage";
 import { screenMarkets } from "@/lib/marketScreener";
+import { fetchSessionPrices } from "@/lib/twelveData";
 
 export const maxDuration = 120; // covers two sequential xAI calls
 
@@ -243,14 +244,13 @@ export async function POST(req: NextRequest) {
     const timeCtx = buildTimeContext();
     const JSON_ONLY = "RESPOND WITH ONLY VALID JSON. No markdown fences. No backticks. No text before { or after }.";
 
-    // ── Step 0: Market screener (parallel with nothing — runs first) ──────────
-    let screenerData = '';
-    try {
-      screenerData = await screenMarkets();
-      console.log('Screener:', screenerData.slice(0, 120));
-    } catch (e: any) {
-      console.warn('Market screener failed (non-fatal):', e?.message ?? e);
-    }
+    // ── Step 0: Screener + live prices in parallel ────────────────────────────
+    const [screenerData, livePrices] = await Promise.all([
+      screenMarkets().catch((e: any) => { console.warn('Screener failed:', e?.message ?? e); return ''; }),
+      fetchSessionPrices(sessionName).catch((e: any) => { console.warn('Twelve Data failed:', e?.message ?? e); return ''; }),
+    ]);
+    if (screenerData) console.log('Screener:', screenerData.slice(0, 120));
+    if (livePrices)   console.log('Twelve Data: fetched', (livePrices.match(/\n/g) ?? []).length - 4, 'prices');
 
     const scanUserContent = screenerData
       ? `${buildScanUserPrompt(sessionName)}\n\nLIVE SCREENER CONTEXT:\n${screenerData}\nFor each ticker listed above, search X for WHY it is moving and report findings.`
@@ -269,7 +269,7 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: "system",
-            content: [buildScanSystemPrompt(sessionName, timeCtx), JSON_ONLY].join("\n\n"),
+            content: [buildScanSystemPrompt(sessionName, timeCtx, livePrices), JSON_ONLY].join("\n\n"),
           },
           {
             role: "user",
@@ -329,7 +329,7 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: "system",
-            content: [buildAnalyzeSystemPrompt(sessionName, timeCtx), JSON_ONLY].join("\n\n"),
+            content: [buildAnalyzeSystemPrompt(sessionName, timeCtx, livePrices), JSON_ONLY].join("\n\n"),
           },
           {
             role: "user",
