@@ -549,29 +549,19 @@ All searches MUST be for content from TODAY or the last 24 hours only.
 ${weekendScanNote}
 ${SESSION_FOCUS[sessionName]}
 
-═══ VERIFIED ACCOUNTS — CHECK EVERY ONE ═══
-Search X for posts from each account in the last 2 hours. Report what you find.
-
-MILITARY / GEOPOLITICAL: @OSINTtechnical @RALee85 @PawelJezowski @DawidKamizela
-  @KapitanLisowski @PISM_Poland @Archer83Actual @GeoConfirmed @IntelCrab
-COMMODITY / ENERGY: @MilkRoadMacro @JuneGoh_Sparta @Kpler @VortexaEnergy @shipping_intel
-FINANCIAL / OPTIONS: @unusual_whales @DeItaone @FinancialJuice @FirstSquawk @Newsquawk @zerohedge
-MACRO / FED: @NickTimiraos @MikeZaccardi @greg_ip @LizAnnSonders @KobeissiLetter @MacroAlf
-POLISH / CEE: @PawelMalik_GG @luke_skiba @KonradMuzyka @PiotrZychowicz
-
-═══ X SENTIMENT SEARCHES ═══
-Run each of these searches and report results:
-1. "#FTSE OR #FTSE100" — UK market mood
-2. "$GBP OR #GBPUSD OR Cable" — sterling sentiment
-3. "#SPX OR #SP500 OR #markets" — US market mood
-4. "spread betting OR IG spread bet" — UK trader sentiment
-5. "@IG_com OR @financialtimes OR @Reuters OR @Bloomberg" — breaking news
-6. Any trending financial/geopolitical hashtags right now
-7. "#silver OR #copper OR #natgas OR #platinum" — metals and energy sentiment
-8. "FTSE unusual volume OR FTSE breakout OR RNS" — UK share scanner
+═══ X / TWITTER POLICY ═══
+You are FORBIDDEN from citing X/Twitter posts in your scan results.
+The previous architecture relied on web search of X but we cannot verify post timestamps that way.
+Instead:
+- Focus exclusively on the VERIFIED RECENT NEWS provided in this prompt (NewsAPI data)
+- Focus on web search of news websites (Reuters, Bloomberg, FT, WSJ, financial blogs)
+- If you find a relevant tweet via web search, do NOT include it — only use it as background context
+- accounts_checked field should be empty: { "with_posts": [], "no_posts": [], "could_not_check": [] }
+- breaking_news section should ONLY contain news with verified URLs and publication timestamps
+═══ END X / TWITTER POLICY ═══
 
 ═══ SHARE TECHNICAL SCANNER — EVERY SESSION ═══
-For UK shares (FTSE100/250) and US shares (S&P500/Nasdaq100), search X for:
+For UK shares (FTSE100/250) and US shares (S&P500/Nasdaq100), search financial news sites for:
 - Shares closing at key support/resistance levels
 - Unusual volume vs 20-day average (institutional interest)
 - Shares with earnings in the next 5 trading days (catalyst)
@@ -593,39 +583,36 @@ These are REAL market movers right now. For each one:
 This is your DISCOVERY engine — these tickers may not be in your usual watchlist but they are where the action is RIGHT NOW.
 
 ═══ INTELLIGENCE CATEGORY SEARCHES ═══
-Search X for content matching these terms. Report what you find — do NOT analyze.
+Search financial news websites (Reuters, Bloomberg, FT, WSJ, CNBC, AP, etc.) for content matching these terms.
+Do NOT search X/Twitter. Report only findings from verifiable news sources with publication timestamps.
 
 MILITARY:
-  English: "military deployment" "carrier group" "NATO exercise" "AWACS" "airspace closed" "DEFCON" "emergency COBRA"
-  Polish: "wojsko" "mobilizacja" "Ukraina" "Rosja" "NATO" "artykuł 5" "wzmocnienie" "alarm"
-  Accounts: @OSINTtechnical @RALee85 @Archer83Actual @GeoConfirmed @KapitanLisowski
+  Search: "military deployment" "carrier group" "NATO exercise" "AWACS" "airspace closed" "DEFCON" "emergency COBRA"
+  Also search in Polish news: "wojsko" "mobilizacja" "Ukraina" "Rosja" "NATO" "artykuł 5" "wzmocnienie"
 
 MACRO:
-  English: "Fed pivot" "FOMC" "Powell" "rate cut" "CPI" "NFP" "PMI miss" "BOE" "ECB"
-  Polish: "Fed" "stopy procentowe" "inflacja" "PKB"
-  Accounts: @NickTimiraos @MikeZaccardi @greg_ip @LizAnnSonders @MacroAlf
+  Search: "Fed pivot" "FOMC" "Powell" "rate cut" "CPI" "NFP" "PMI miss" "BOE" "ECB" "rate decision"
+  Source priority: Reuters, Bloomberg, WSJ, FT
 
 EARNINGS:
-  English: "earnings beat" "earnings miss" "profit warning" "guidance cut" "channel check" "EPS" "pre-announcement"
-  Accounts: @EarningsWhispers @WallStJesus @zerohedge @DeItaone @FirstSquawk
+  Search: "earnings beat" "earnings miss" "profit warning" "guidance cut" "EPS" "pre-announcement" "quarterly results"
+  Source priority: Reuters, Bloomberg, Barron's, MarketWatch
 
 OPTIONS:
-  English: "unusual options activity" "dark pool print" "options sweep" "call sweep" "put sweep" "VIX spike" "0DTE" "gamma squeeze"
-  Accounts: @unusual_whales @optionshawk @OptionsAction @SpotGamma
+  Search: "unusual options activity" "options sweep" "VIX spike" "gamma squeeze" "put call ratio"
+  Source priority: Bloomberg, Reuters, CNBC
 
 CRYPTO:
-  English: "Bitcoin liquidation" "whale wallet" "exchange flow" "BTC dominance" "$50M liquidation" "stablecoin mint"
-  Accounts: @WatcherGuru @ali_charts @CryptoQuant @lookonchain @glassnode
+  Search: "Bitcoin liquidation" "whale wallet" "exchange flow" "BTC" "crypto regulation" "SEC crypto"
+  Source priority: CoinDesk, Bloomberg Crypto, Reuters
 
 SUPPLY:
-  English: "Baltic Dry" "port congestion" "tanker AIS" "Suez Canal" "Strait of Hormuz" "LNG terminal" "pipeline outage" "force majeure"
-  Polish: "Rurociąg" "gaz ziemny" "Drużba"
-  Accounts: @Kpler @VortexaEnergy @shipping_intel @FreightWaves
+  Search: "Baltic Dry" "port congestion" "Suez Canal" "Strait of Hormuz" "LNG terminal" "pipeline outage" "force majeure"
+  Source priority: Reuters Commodities, Bloomberg Energy, FreightWaves
 
 REGULA:
-  English: "BOE rate" "ECB decision" "Fed rate" "sanctions" "tariff" "trade war" "Basel" "MiCA" "bank stress test"
-  Polish: "NBP" "sankcje" "embargo" "regulacje"
-  Accounts: @NickTimiraos @DeItaone @Newsquawk @FirstSquawk
+  Search: "BOE rate" "ECB decision" "Fed rate" "sanctions" "tariff" "trade war" "Basel" "MiCA" "bank stress test"
+  Source priority: Reuters, Bloomberg, FT, WSJ
 
 ═══ MACRO CALENDAR ═══
 Search for TODAY's economic calendar (${timeCtx.ukDate}). Find all scheduled releases with consensus estimates.
@@ -788,19 +775,19 @@ Rules:
 
 Violating these rules makes the signal hallucinated and unusable. Empty signals are better than fake prices.
 
-═══ MANDATORY NEWS VERIFICATION ═══
-You have been provided with VERIFIED RECENT NEWS at the top of this prompt.
-These are REAL news articles with VERIFIED timestamps from trusted sources.
+═══ MANDATORY NEWS VERIFICATION — STRICT ═══
+You have VERIFIED RECENT NEWS at the top of this prompt with exact ageMinutes timestamps.
 
-Rules:
-1. When citing a news event, ONLY cite items from the provided VERIFIED NEWS list.
-2. NEVER invent news headlines, even if plausible.
-3. NEVER claim 'just reported' or '30 min ago' unless backed by a verified item with that timestamp.
-4. When citing an X/Twitter post, you must explicitly state: 'X post by @handle (cannot verify timestamp)' OR use only verified news with explicit ageMinutes.
-5. If no verified news supports a signal — that signal cannot have a 'breaking news' justification. Use technical/price-based reasoning instead.
-6. Cite sources using exact names from the verified list: 'Reuters reports 15 min ago that...'
+ABSOLUTE RULES:
+1. EVERY signal that cites a news event MUST reference a specific item from VERIFIED RECENT NEWS by quoting the source name (e.g., 'Reuters', 'Bloomberg') and ageMinutes.
+2. NEVER cite '@handle on X said' or 'tweet from @account' — we cannot verify these. Use only news outlets.
+3. NEVER write 'just reported', 'breaking', or 'X minutes ago' unless backed by exact ageMinutes from verified data.
+4. Geopolitical/military signals: REQUIRE a verified news item with ageMinutes <= 240 (4 hours). Without one, no signal — set strength to 0 or skip.
+5. If verified news doesn't support a signal, use technical/price reasoning only (e.g., 'RSI oversold + volume spike' from Alpha Vantage data).
+6. The intelligence_feed and breaking_osint sections must ONLY contain items backed by verified news data.
 
-This is non-negotiable. Fabricating news is the worst hallucination — it loses trader trust permanently.
+VIOLATING THESE RULES = HALLUCINATION = TRADER LOSES MONEY = TRADER STOPS USING BOT
+This is the highest priority rule. Empty arrays are mandatory if no verified data supports them.
 
 ═══ ANTI-HALLUCINATION RULES ═══
 You are working ONLY from the scan data provided. These rules are NON-NEGOTIABLE:
@@ -900,7 +887,8 @@ Return ONLY this exact JSON:
   "countdown_event": {"label":"next key market event","minutes":0},
   "breaking_osint": [
     {
-      "account": "@handle",
+      "newsapi_source": "exact source name from verified news list (Reuters/Bloomberg/etc) — required, not optional",
+      "newsapi_age_minutes": 0,
       "credibility": 0,
       "post_summary": "co napisał — max 15 słów po polsku",
       "market_impact": ["Brent Oil"],
@@ -911,24 +899,17 @@ Return ONLY this exact JSON:
     }
   ],
   "accounts_checked": {
-    "with_relevant_posts": ["@handle — brief description of what they posted"],
-    "no_recent_posts": ["@handle", "@handle"],
-    "could_not_check": ["@handle"]
+    "with_relevant_posts": [],
+    "no_recent_posts": [],
+    "could_not_check": []
   },
-  "top_intelligence_accounts": [
-    {
-      "handle": "@nowoodkryte_konto",
-      "reason": "why this account is a hidden gem — English, max 10 words",
-      "category": "MILITARY|MACRO|EARNINGS|OPTIONS|CRYPTO|SUPPLY|REGULA",
-      "credibility": 0,
-      "todays_signal": "co ważnego napisali dziś — max 12 słów po polsku"
-    }
-  ],
+  "top_intelligence_accounts": [],
   "intelligence_feed": [
     {
       "category": "MILITARY|MACRO|EARNINGS|OPTIONS|CRYPTO|SUPPLY|REGULA",
       "signal": "specific description of what was found in the scan data",
-      "source": "@handle or outlet name",
+      "newsapi_source": "exact source name from verified news list (Reuters/Bloomberg/etc) — required, not optional",
+      "newsapi_age_minutes": 0,
       "credibility": 0,
       "lead_time_hours": 0,
       "market_impact": ["Brent Oil", "Gold"],
