@@ -6,7 +6,7 @@ export async function discoverHotTopics(): Promise<string[]> {
 
   try {
     const controller = new AbortController();
-    const timeout    = setTimeout(() => controller.abort(), 10_000);
+    const timeout    = setTimeout(() => controller.abort(), 6_000);
 
     const currentDate = new Date().toISOString().split('T')[0];
 
@@ -53,7 +53,7 @@ Search the web thoroughly before returning. Each topic must have VERIFIABLE rece
       body: JSON.stringify({
         model:             'grok-4-fast-reasoning',
         temperature:       0.2,
-        max_tokens:        500,
+        max_tokens:        300,
         messages:          [{ role: 'user', content: prompt }],
         search_parameters: { mode: 'auto' },
       }),

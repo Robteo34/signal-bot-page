@@ -248,24 +248,33 @@ export async function POST(req: NextRequest) {
     const timeCtx = buildTimeContext();
     const JSON_ONLY = "RESPOND WITH ONLY VALID JSON. No markdown fences. No backticks. No text before { or after }.";
 
-    // ── Step 0.5: Topic discovery preflight (10s cap, graceful fallback) ────
-    const hotTopics = await discoverHotTopics().catch(() => []);
-    console.log(`Hot topics discovered: ${JSON.stringify(hotTopics)}`);
-    const dynamicQueries = generateTopicQueries(hotTopics);
-    console.log(`Dynamic GDELT queries: ${Object.keys(dynamicQueries).join(', ')}`);
+    // ── Step 0: topic discovery fires immediately alongside other fetches ────
+    // Topics run in parallel with non-OSINT fetches (they don't need each other).
+    // After those resolve, we race topics against a 100ms drain window so OSINT
+    // gets dynamic queries if Grok finished in time, or falls back to statics.
+    const topicsPromise = discoverHotTopics().catch(() => [] as string[]);
 
-    // ── Step 0: Screener + live prices + news in parallel, 25s hard cap ─────
-    const dataTimeout = new Promise<[string, string, string, string, string]>((resolve) =>
-      setTimeout(() => { console.warn('Step 0: data gathering timed out after 25s, proceeding'); resolve(['', '', '', '', '']); }, 25_000)
-    );
-    const dataFetch = Promise.all([
+    const [screenerData, livePrices, recentNews, macroCalendar] = await Promise.all([
       screenMarkets().catch((e: any)                 => { console.warn('Screener failed:', e?.message ?? e); return ''; }),
       fetchSessionPrices(sessionName).catch((e: any)  => { console.warn('Twelve Data failed:', e?.message ?? e); return ''; }),
       fetchSessionNews(sessionName).catch((e: any)    => { console.warn('NewsAPI failed:', e?.message ?? e); return ''; }),
       fetchMacroCalendar().catch((e: any)             => { console.warn('Forex Factory failed:', e?.message ?? e); return ''; }),
-      fetchOSINTEvents(sessionName, dynamicQueries).catch((e: any) => { console.warn('GDELT failed:', e?.message ?? e); return ''; }),
     ]);
-    const [screenerData, livePrices, recentNews, macroCalendar, osintEvents] = await Promise.race([dataFetch, dataTimeout]);
+
+    // Drain any already-resolved topics; 100ms grace if still pending
+    const hotTopics = await Promise.race([
+      topicsPromise,
+      new Promise<string[]>((resolve) => setTimeout(() => resolve([]), 100)),
+    ]);
+    console.log(`Hot topics discovered: ${JSON.stringify(hotTopics)}`);
+    const dynamicQueries = generateTopicQueries(hotTopics);
+    console.log(`Dynamic GDELT queries: ${Object.keys(dynamicQueries).join(', ')}`);
+
+    // OSINT needs dynamic queries so runs after topics resolve
+    const osintEvents = await fetchOSINTEvents(sessionName, dynamicQueries).catch((e: any) => {
+      console.warn('GDELT failed:', e?.message ?? e); return '';
+    });
+
     console.log(`Data sources: screener=${screenerData?.length || 0}, prices=${livePrices?.length || 0}, news=${recentNews?.length || 0}, macro=${macroCalendar?.length || 0}, osint=${osintEvents?.length || 0}`);
     console.log(`OSINT preview: ${osintEvents?.slice(0, 200) || 'EMPTY'}`);
     if (screenerData)  console.log('Screener:', screenerData.slice(0, 120));
