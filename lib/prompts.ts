@@ -521,7 +521,7 @@ Return ONLY this exact JSON — fill every field with real current analysis:
 // Call 2 (ANALYZE): receive raw data, generate signals → buildAnalyzeSystemPrompt / buildAnalyzeUserPrompt
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function buildScanSystemPrompt(sessionName: SessionName, timeCtx: TimeContext, livePrices?: string): string {
+export function buildScanSystemPrompt(sessionName: SessionName, timeCtx: TimeContext, livePrices?: string, recentNews?: string): string {
   const isWeekend = timeCtx.ukDay === 'Saturday' || timeCtx.ukDay === 'Sunday';
   const weekendScanNote = isWeekend ? `
 ═══ WEEKEND SCAN MODE ═══
@@ -536,8 +536,9 @@ Do NOT report equity market price action — exchanges are closed.
 ` : '';
 
   const priceBlock = livePrices ? `${livePrices}\n\n` : '';
+  const newsBlock  = recentNews ? `${recentNews}\n\nVERIFIED RECENT NEWS provided above. Use these for context but ALSO continue searching X/web for additional intel that the news API may have missed (e.g. raw X posts from your verified accounts list, options flow, military OSINT not covered by mainstream outlets).\n\n` : '';
 
-  return `${priceBlock}You are a financial data SCANNER. Your job is to SEARCH and COLLECT only. Do NOT analyze, do NOT generate trading signals, do NOT provide recommendations. Just report what you found.
+  return `${priceBlock}${newsBlock}You are a financial data SCANNER. Your job is to SEARCH and COLLECT only. Do NOT analyze, do NOT generate trading signals, do NOT provide recommendations. Just report what you found.
 
 ═══ AUTHORITATIVE DATE/TIME ═══
 Date: ${timeCtx.ukDay}, ${timeCtx.ukDate}
@@ -664,7 +665,7 @@ export function buildScanUserPrompt(sessionName: SessionName): string {
   return `Scan all sources for the ${sessionName} session. Search X for each verified account and sentiment query. Check the macro calendar for today. Search each intelligence category. Report everything you find. Return ONLY the JSON format specified.`;
 }
 
-export function buildAnalyzeSystemPrompt(sessionName: SessionName, timeCtx: TimeContext, livePrices?: string): string {
+export function buildAnalyzeSystemPrompt(sessionName: SessionName, timeCtx: TimeContext, livePrices?: string, recentNews?: string): string {
   const isWeekend = timeCtx.ukDay === 'Saturday' || timeCtx.ukDay === 'Sunday';
   const weekendRules = isWeekend ? `
 ═══ WEEKEND RULES — MANDATORY ═══
@@ -678,9 +679,10 @@ Today is ${timeCtx.ukDay}. These rules override all other signal generation rule
 ═══ END WEEKEND RULES ═══
 ` : '';
 
-  const priceBlock = livePrices ? `${livePrices}\n\n` : '';
+  const priceBlock = livePrices  ? `${livePrices}\n\n`  : '';
+  const newsBlock  = recentNews  ? `${recentNews}\n\n`  : '';
 
-  return `${priceBlock}You are a senior market analyst. You are given PRE-COLLECTED scan data. Your job is to ANALYZE this data and generate trading signals. Do NOT search for new data. Work ONLY with what is provided in the user message. If the scan data is SPARSE or EMPTY for a category, do NOT fabricate signals — return fewer signals with honest confidence scores.
+  return `${priceBlock}${newsBlock}You are a senior market analyst. You are given PRE-COLLECTED scan data. Your job is to ANALYZE this data and generate trading signals. Do NOT search for new data. Work ONLY with what is provided in the user message. If the scan data is SPARSE or EMPTY for a category, do NOT fabricate signals — return fewer signals with honest confidence scores.
 ${weekendRules}
 ═══ AUTHORITATIVE DATE/TIME ═══
 Date: ${timeCtx.ukDay}, ${timeCtx.ukDate}
@@ -785,6 +787,20 @@ Rules:
 6. ALWAYS include the timestamp of the price you used: 'Entry 2358.20 (price as of [timestamp])'.
 
 Violating these rules makes the signal hallucinated and unusable. Empty signals are better than fake prices.
+
+═══ MANDATORY NEWS VERIFICATION ═══
+You have been provided with VERIFIED RECENT NEWS at the top of this prompt.
+These are REAL news articles with VERIFIED timestamps from trusted sources.
+
+Rules:
+1. When citing a news event, ONLY cite items from the provided VERIFIED NEWS list.
+2. NEVER invent news headlines, even if plausible.
+3. NEVER claim 'just reported' or '30 min ago' unless backed by a verified item with that timestamp.
+4. When citing an X/Twitter post, you must explicitly state: 'X post by @handle (cannot verify timestamp)' OR use only verified news with explicit ageMinutes.
+5. If no verified news supports a signal — that signal cannot have a 'breaking news' justification. Use technical/price-based reasoning instead.
+6. Cite sources using exact names from the verified list: 'Reuters reports 15 min ago that...'
+
+This is non-negotiable. Fabricating news is the worst hallucination — it loses trader trust permanently.
 
 ═══ ANTI-HALLUCINATION RULES ═══
 You are working ONLY from the scan data provided. These rules are NON-NEGOTIABLE:
