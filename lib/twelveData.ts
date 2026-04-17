@@ -30,22 +30,28 @@ const SYMBOL_MAP: Record<string, string> = {
   'HSBA.L': 'HSBA', 'AZN.L': 'AZN', 'RR.L': 'RR',
 };
 
+// MAX 7 per session — all fetched in parallel, no batching
 const SESSION_UNIVERSE: Record<string, string[]> = {
-  ASIA_OVERNIGHT:  ['Gold', 'BTC/USD', 'ETH/USD', 'USD/JPY', 'AUD/USD', 'Nikkei225', 'Hang Seng'],
-  PRE_LONDON:      ['Gold', 'Silver', 'Brent Oil', 'GBP/USD', 'EUR/USD', 'EUR/GBP', 'FTSE100', 'BTC/USD'],
-  LONDON:          ['Gold', 'Silver', 'Brent Oil', 'GBP/USD', 'GBP/JPY', 'EUR/USD', 'FTSE100', 'DAX', 'BTC/USD', 'SHEL.L', 'BP.L'],
-  PRE_NY:          ['Gold', 'Brent Oil', 'GBP/USD', 'EUR/USD', 'SPX500', 'Nasdaq100', 'NVDA', 'TSLA', 'BTC/USD', 'VIX'],
-  OVERLAP:         ['Gold', 'Silver', 'Brent Oil', 'GBP/USD', 'EUR/USD', 'SPX500', 'Nasdaq100', 'FTSE100', 'NVDA', 'BTC/USD', 'VIX'],
-  US_AFTERNOON:    ['Gold', 'Brent Oil', 'SPX500', 'Nasdaq100', 'Dow Jones', 'NVDA', 'TSLA', 'AAPL', 'BTC/USD', 'ETH/USD', 'VIX'],
-  EVENING_JOURNAL: ['Gold', 'BTC/USD', 'ETH/USD', 'SPX500', 'Nasdaq100', 'GBP/USD'],
-  NIGHT_MODE:      ['BTC/USD', 'ETH/USD'],
+  ASIA_OVERNIGHT:  ['BTC/USD', 'ETH/USD', 'USD/JPY', 'Gold', 'Nikkei225', 'AUD/USD', 'Hang Seng'],
+  PRE_LONDON:      ['GBP/USD', 'EUR/USD', 'Gold', 'Brent Oil', 'FTSE100', 'BTC/USD', 'EUR/GBP'],
+  LONDON:          ['GBP/USD', 'EUR/USD', 'Gold', 'Brent Oil', 'FTSE100', 'DAX', 'BTC/USD'],
+  PRE_NY:          ['GBP/USD', 'EUR/USD', 'SPX500', 'Nasdaq100', 'Gold', 'BTC/USD', 'VIX'],
+  OVERLAP:         ['SPX500', 'Nasdaq100', 'GBP/USD', 'EUR/USD', 'Gold', 'BTC/USD', 'VIX'],
+  US_AFTERNOON:    ['SPX500', 'Nasdaq100', 'NVDA', 'TSLA', 'BTC/USD', 'ETH/USD', 'VIX'],
+  EVENING_JOURNAL: ['SPX500', 'Nasdaq100', 'BTC/USD', 'Gold', 'GBP/USD', 'ETH/USD', 'VIX'],
+  NIGHT_MODE:      ['BTC/USD', 'ETH/USD', 'Gold'],
   WEEKEND:         ['BTC/USD', 'ETH/USD', 'Gold'],
 };
 
 async function fetchSinglePrice(symbol: string): Promise<{ price: number; changePercent: number; timestamp: string } | null> {
   if (!TD_KEY) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000); // 5s per-fetch timeout
   try {
-    const res  = await fetch(`${TD_BASE}/quote?symbol=${encodeURIComponent(symbol)}&apikey=${TD_KEY}`);
+    const res  = await fetch(
+      `${TD_BASE}/quote?symbol=${encodeURIComponent(symbol)}&apikey=${TD_KEY}`,
+      { signal: controller.signal }
+    );
     if (!res.ok) return null;
     const data = await res.json();
     if (data.code) return null; // API error response
@@ -57,8 +63,10 @@ async function fetchSinglePrice(symbol: string): Promise<{ price: number; change
       timestamp:     data.datetime ?? new Date().toISOString(),
     };
   } catch (e: any) {
-    console.warn(`Twelve Data error for ${symbol}:`, e?.message ?? e);
+    if (e?.name !== 'AbortError') console.warn(`Twelve Data error for ${symbol}:`, e?.message ?? e);
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -67,24 +75,19 @@ export async function fetchSessionPrices(sessionName: string): Promise<string> {
 
   const assets    = SESSION_UNIVERSE[sessionName] ?? SESSION_UNIVERSE['OVERLAP'];
   const fetchedAt = new Date().toISOString();
-  const results: PriceData[] = [];
-  const BATCH = 8; // free tier: 8 req/min
 
-  for (let i = 0; i < assets.length; i += BATCH) {
-    const batch = assets.slice(i, i + BATCH);
-    const batchResults = await Promise.all(
-      batch.map(async (assetName) => {
-        const tdSymbol = SYMBOL_MAP[assetName];
-        if (!tdSymbol) return null;
-        const data = await fetchSinglePrice(tdSymbol);
-        if (!data) return null;
-        return { symbol: tdSymbol, displayName: assetName, ...data } as PriceData;
-      })
-    );
-    results.push(...batchResults.filter((r): r is PriceData => r !== null));
-    if (i + BATCH < assets.length) await new Promise((r) => setTimeout(r, 1000));
-  }
+  // Fetch ALL prices in parallel — no batching, individual 5s timeouts handle stragglers
+  const batchResults = await Promise.all(
+    assets.map(async (assetName) => {
+      const tdSymbol = SYMBOL_MAP[assetName];
+      if (!tdSymbol) return null;
+      const data = await fetchSinglePrice(tdSymbol);
+      if (!data) return null;
+      return { symbol: tdSymbol, displayName: assetName, ...data } as PriceData;
+    })
+  );
 
+  const results = batchResults.filter((r): r is PriceData => r !== null);
   if (results.length === 0) return '';
 
   const lines = results.map((r) => {

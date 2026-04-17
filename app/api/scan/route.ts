@@ -244,11 +244,15 @@ export async function POST(req: NextRequest) {
     const timeCtx = buildTimeContext();
     const JSON_ONLY = "RESPOND WITH ONLY VALID JSON. No markdown fences. No backticks. No text before { or after }.";
 
-    // ── Step 0: Screener + live prices in parallel ────────────────────────────
-    const [screenerData, livePrices] = await Promise.all([
+    // ── Step 0: Screener + live prices in parallel, 25s hard cap ────────────
+    const dataTimeout = new Promise<[string, string]>((resolve) =>
+      setTimeout(() => { console.warn('Step 0: data gathering timed out after 25s, proceeding'); resolve(['', '']); }, 25_000)
+    );
+    const dataFetch = Promise.all([
       screenMarkets().catch((e: any) => { console.warn('Screener failed:', e?.message ?? e); return ''; }),
       fetchSessionPrices(sessionName).catch((e: any) => { console.warn('Twelve Data failed:', e?.message ?? e); return ''; }),
     ]);
+    const [screenerData, livePrices] = await Promise.race([dataFetch, dataTimeout]);
     if (screenerData) console.log('Screener:', screenerData.slice(0, 120));
     if (livePrices)   console.log('Twelve Data: fetched', (livePrices.match(/\n/g) ?? []).length - 4, 'prices');
 
@@ -301,12 +305,15 @@ export async function POST(req: NextRequest) {
       scanPayload = scanRawText;
     }
 
-    // ── Extract top tickers from scan + fetch Alpha Vantage data ─────────────
+    // ── Extract top tickers from scan + fetch Alpha Vantage data (10s cap) ──
     let technicalData = '';
     try {
       const topTickers = extractTopTickers(parsedScan);
       console.log('Top tickers from scan:', topTickers);
-      technicalData = await getMarketData(topTickers);
+      const avTimeout = new Promise<string>((resolve) =>
+        setTimeout(() => { console.warn('Alpha Vantage timed out after 10s'); resolve(''); }, 10_000)
+      );
+      technicalData = await Promise.race([getMarketData(topTickers), avTimeout]);
       if (technicalData) console.log('Alpha Vantage:', technicalData.slice(0, 120));
     } catch (e: any) {
       console.warn('Alpha Vantage fetch failed (non-fatal):', e?.message ?? e);
