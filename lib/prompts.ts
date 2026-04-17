@@ -521,7 +521,7 @@ Return ONLY this exact JSON — fill every field with real current analysis:
 // Call 2 (ANALYZE): receive raw data, generate signals → buildAnalyzeSystemPrompt / buildAnalyzeUserPrompt
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function buildScanSystemPrompt(sessionName: SessionName, timeCtx: TimeContext, livePrices?: string, recentNews?: string, macroCalendar?: string): string {
+export function buildScanSystemPrompt(sessionName: SessionName, timeCtx: TimeContext, livePrices?: string, recentNews?: string, macroCalendar?: string, osintEvents?: string): string {
   const isWeekend = timeCtx.ukDay === 'Saturday' || timeCtx.ukDay === 'Sunday';
   const weekendScanNote = isWeekend ? `
 ═══ WEEKEND SCAN MODE ═══
@@ -536,10 +536,11 @@ Do NOT report equity market price action — exchanges are closed.
 ` : '';
 
   const priceBlock    = livePrices    ? `${livePrices}\n\n`    : '';
-  const newsBlock     = recentNews    ? `${recentNews}\n\nVERIFIED RECENT NEWS provided above. Use these for context but ALSO continue searching X/web for additional intel that the news API may have missed (e.g. raw X posts from your verified accounts list, options flow, military OSINT not covered by mainstream outlets).\n\n` : '';
+  const newsBlock     = recentNews    ? `${recentNews}\n\nVERIFIED RECENT NEWS provided above. Use these for context but ALSO continue searching web for additional intel that the news API may have missed (e.g. options flow, macro data not covered by mainstream outlets).\n\n` : '';
   const calendarBlock = macroCalendar ? `${macroCalendar}\n\n` : '';
+  const osintBlock    = osintEvents   ? `${osintEvents}\n\n`   : '';
 
-  return `${priceBlock}${newsBlock}${calendarBlock}You are a financial data SCANNER. Your job is to SEARCH and COLLECT only. Do NOT analyze, do NOT generate trading signals, do NOT provide recommendations. Just report what you found.
+  return `${priceBlock}${newsBlock}${calendarBlock}${osintBlock}You are a financial data SCANNER. Your job is to SEARCH and COLLECT only. Do NOT analyze, do NOT generate trading signals, do NOT provide recommendations. Just report what you found.
 
 ═══ AUTHORITATIVE DATE/TIME ═══
 Date: ${timeCtx.ukDay}, ${timeCtx.ukDate}
@@ -653,7 +654,7 @@ export function buildScanUserPrompt(sessionName: SessionName): string {
   return `Scan all sources for the ${sessionName} session. Search X for each verified account and sentiment query. Check the macro calendar for today. Search each intelligence category. Report everything you find. Return ONLY the JSON format specified.`;
 }
 
-export function buildAnalyzeSystemPrompt(sessionName: SessionName, timeCtx: TimeContext, livePrices?: string, recentNews?: string, macroCalendar?: string): string {
+export function buildAnalyzeSystemPrompt(sessionName: SessionName, timeCtx: TimeContext, livePrices?: string, recentNews?: string, macroCalendar?: string, osintEvents?: string): string {
   const isWeekend = timeCtx.ukDay === 'Saturday' || timeCtx.ukDay === 'Sunday';
   const weekendRules = isWeekend ? `
 ═══ WEEKEND RULES — MANDATORY ═══
@@ -670,8 +671,9 @@ Today is ${timeCtx.ukDay}. These rules override all other signal generation rule
   const priceBlock    = livePrices    ? `${livePrices}\n\n`    : '';
   const newsBlock     = recentNews    ? `${recentNews}\n\n`    : '';
   const calendarBlock = macroCalendar ? `${macroCalendar}\n\n` : '';
+  const osintBlock    = osintEvents   ? `${osintEvents}\n\n`   : '';
 
-  return `${priceBlock}${newsBlock}${calendarBlock}You are a senior market analyst. You are given PRE-COLLECTED scan data. Your job is to ANALYZE this data and generate trading signals. Do NOT search for new data. Work ONLY with what is provided in the user message. If the scan data is SPARSE or EMPTY for a category, do NOT fabricate signals — return fewer signals with honest confidence scores.
+  return `${priceBlock}${newsBlock}${calendarBlock}${osintBlock}You are a senior market analyst. You are given PRE-COLLECTED scan data. Your job is to ANALYZE this data and generate trading signals. Do NOT search for new data. Work ONLY with what is provided in the user message. If the scan data is SPARSE or EMPTY for a category, do NOT fabricate signals — return fewer signals with honest confidence scores.
 ${weekendRules}
 ═══ AUTHORITATIVE DATE/TIME ═══
 Date: ${timeCtx.ukDay}, ${timeCtx.ukDate}
@@ -801,6 +803,21 @@ Rules:
 4. If discussing 'CPI tomorrow' or similar, the event MUST be in the calendar — if not in calendar, do not mention it.
 5. For RELEASED events: surprise = (actual - forecast). Positive surprise = bullish for currency, negative = bearish.
 6. The macro_events_today field in output JSON must contain ONLY events from this verified calendar.
+
+═══ MANDATORY OSINT VERIFICATION ═══
+You have been provided with VERIFIED OSINT EVENTS (GDELT 2.0) at the top of this prompt.
+These are REAL geopolitical, military, energy events from global news with VERIFIED timestamps and URLs.
+
+Rules for MILITARY, GEOPOLITICAL, ENERGY, SUPPLY categories:
+1. ONLY cite events from the verified OSINT list.
+2. NEVER invent military deployments, NATO exercises, carrier groups, troop movements.
+3. NEVER claim 'satellite imagery shows' or 'reports indicate' unless backed by a verified OSINT item.
+4. Each intelligence_feed item in these categories MUST reference a source from the GDELT list.
+5. The breaking_osint field MUST only contain events from verified OSINT or NewsAPI.
+6. If no verified OSINT supports a geopolitical signal — do not generate that signal.
+7. When citing: 'Per [source.com] [ageMinutes]min ago: [event title]'
+
+This is critical. The previous architecture hallucinated 'Russian tanks at Polish border', 'NATO carrier in Baltic Sea' — those were fabrications. Never again.
 
 ═══ ANTI-HALLUCINATION RULES ═══
 You are working ONLY from the scan data provided. These rules are NON-NEGOTIABLE:

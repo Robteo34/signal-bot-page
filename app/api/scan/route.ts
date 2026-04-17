@@ -14,6 +14,7 @@ import { screenMarkets } from "@/lib/marketScreener";
 import { fetchSessionPrices } from "@/lib/twelveData";
 import { fetchSessionNews } from "@/lib/newsApi";
 import { fetchMacroCalendar } from "@/lib/economicCalendar";
+import { fetchOSINTEvents } from "@/lib/gdelt";
 
 export const maxDuration = 120; // covers two sequential xAI calls
 
@@ -247,20 +248,22 @@ export async function POST(req: NextRequest) {
     const JSON_ONLY = "RESPOND WITH ONLY VALID JSON. No markdown fences. No backticks. No text before { or after }.";
 
     // ── Step 0: Screener + live prices + news in parallel, 25s hard cap ─────
-    const dataTimeout = new Promise<[string, string, string, string]>((resolve) =>
-      setTimeout(() => { console.warn('Step 0: data gathering timed out after 25s, proceeding'); resolve(['', '', '', '']); }, 25_000)
+    const dataTimeout = new Promise<[string, string, string, string, string]>((resolve) =>
+      setTimeout(() => { console.warn('Step 0: data gathering timed out after 25s, proceeding'); resolve(['', '', '', '', '']); }, 25_000)
     );
     const dataFetch = Promise.all([
-      screenMarkets().catch((e: any)               => { console.warn('Screener failed:', e?.message ?? e); return ''; }),
-      fetchSessionPrices(sessionName).catch((e: any) => { console.warn('Twelve Data failed:', e?.message ?? e); return ''; }),
-      fetchSessionNews(sessionName).catch((e: any)   => { console.warn('NewsAPI failed:', e?.message ?? e); return ''; }),
-      fetchMacroCalendar().catch((e: any)            => { console.warn('Forex Factory failed:', e?.message ?? e); return ''; }),
+      screenMarkets().catch((e: any)                 => { console.warn('Screener failed:', e?.message ?? e); return ''; }),
+      fetchSessionPrices(sessionName).catch((e: any)  => { console.warn('Twelve Data failed:', e?.message ?? e); return ''; }),
+      fetchSessionNews(sessionName).catch((e: any)    => { console.warn('NewsAPI failed:', e?.message ?? e); return ''; }),
+      fetchMacroCalendar().catch((e: any)             => { console.warn('Forex Factory failed:', e?.message ?? e); return ''; }),
+      fetchOSINTEvents(sessionName).catch((e: any)    => { console.warn('GDELT failed:', e?.message ?? e); return ''; }),
     ]);
-    const [screenerData, livePrices, recentNews, macroCalendar] = await Promise.race([dataFetch, dataTimeout]);
-    if (screenerData)   console.log('Screener:', screenerData.slice(0, 120));
-    if (livePrices)     console.log('Twelve Data: fetched', (livePrices.match(/\n/g) ?? []).length - 4, 'prices');
-    if (recentNews)     console.log('NewsAPI: fetched', (recentNews.match(/^\[/mg) ?? []).length, 'articles');
-    if (macroCalendar)  console.log('Forex Factory: fetched', (macroCalendar.match(/^\[/mg) ?? []).length, 'events');
+    const [screenerData, livePrices, recentNews, macroCalendar, osintEvents] = await Promise.race([dataFetch, dataTimeout]);
+    if (screenerData)  console.log('Screener:', screenerData.slice(0, 120));
+    if (livePrices)    console.log('Twelve Data: fetched', (livePrices.match(/\n/g) ?? []).length - 4, 'prices');
+    if (recentNews)    console.log('NewsAPI: fetched', (recentNews.match(/^\[/mg) ?? []).length, 'articles');
+    if (macroCalendar) console.log('Forex Factory: fetched', (macroCalendar.match(/^\[/mg) ?? []).length, 'events');
+    if (osintEvents)   console.log('GDELT: fetched OSINT events');
 
     const scanUserContent = screenerData
       ? `${buildScanUserPrompt(sessionName)}\n\nLIVE SCREENER CONTEXT:\n${screenerData}\nFor each ticker listed above, search X for WHY it is moving and report findings.`
@@ -279,7 +282,7 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: "system",
-            content: [buildScanSystemPrompt(sessionName, timeCtx, livePrices, recentNews, macroCalendar), JSON_ONLY].join("\n\n"),
+            content: [buildScanSystemPrompt(sessionName, timeCtx, livePrices, recentNews, macroCalendar, osintEvents), JSON_ONLY].join("\n\n"),
           },
           {
             role: "user",
@@ -342,7 +345,7 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: "system",
-            content: [buildAnalyzeSystemPrompt(sessionName, timeCtx, livePrices, recentNews, macroCalendar), JSON_ONLY].join("\n\n"),
+            content: [buildAnalyzeSystemPrompt(sessionName, timeCtx, livePrices, recentNews, macroCalendar, osintEvents), JSON_ONLY].join("\n\n"),
           },
           {
             role: "user",
