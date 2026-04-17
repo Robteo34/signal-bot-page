@@ -30,11 +30,15 @@ export async function fetchMacroCalendar(): Promise<string> {
 
     if (!Array.isArray(events)) return '';
 
-    const now      = Date.now();
-    const next24h  = now + 24 * 60 * 60 * 1000;
-    const past2h   = now - 2 * 60 * 60 * 1000;
+    const now    = Date.now();
+    const past2h = now - 2 * 60 * 60 * 1000;
+    // Weekends: show 72h ahead so Monday events are visible for prep
+    const utcDay  = new Date().getUTCDay();
+    const utcHour = new Date().getUTCHours();
+    const isWeekend = utcDay === 6 || utcDay === 0 || (utcDay === 5 && utcHour >= 20);
+    const nextWindow = now + (isWeekend ? 72 : 24) * 60 * 60 * 1000;
 
-    // Filter: only relevant currencies, only HIGH/MEDIUM impact, within window (past 2h to next 24h)
+    // Filter: only relevant currencies, only HIGH/MEDIUM impact, within window
     const filtered: MacroEvent[] = events
       .filter((e) => RELEVANT_CURRENCIES.includes(e.country))
       .filter((e) => e.impact === 'High' || e.impact === 'Medium')
@@ -53,7 +57,7 @@ export async function fetchMacroCalendar(): Promise<string> {
       })
       .filter((e) => {
         const t = new Date(e.time).getTime();
-        return t >= past2h && t <= next24h;
+        return t >= past2h && t <= nextWindow;
       })
       .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
       .slice(0, 15);
@@ -75,7 +79,7 @@ export async function fetchMacroCalendar(): Promise<string> {
 
     return [
       '═══ VERIFIED MACRO CALENDAR (Forex Factory) ═══',
-      'Window: past 2h to next 24h',
+      `Window: past 2h to next ${isWeekend ? '72h (weekend — showing Monday events)' : '24h'}`,
       'Use these events for macro signal generation. Released events show actual vs forecast — surprises move markets.',
       '',
       ...lines,

@@ -814,8 +814,9 @@ Rules for MILITARY, GEOPOLITICAL, ENERGY, SUPPLY categories:
 3. NEVER claim 'satellite imagery shows' or 'reports indicate' unless backed by a verified OSINT item.
 4. Each intelligence_feed item in these categories MUST reference a source from the GDELT list.
 5. The breaking_osint field MUST only contain events from verified OSINT or NewsAPI.
-6. If no verified OSINT supports a geopolitical signal — do not generate that signal.
+6. If verified OSINT has relevant events — INCLUDE them in intelligence_feed as MILITARY/GEOPOLITICAL/ENERGY category with source citation. Don't skip items just because they're not super actionable — weekend OSINT is context for Monday.
 7. When citing: 'Per [source.com] [ageMinutes]min ago: [event title]'
+8. You MUST populate intelligence_feed with at least 2-3 items if GDELT returned ANY verified events. Weekend/quiet sessions still benefit from OSINT awareness. Do not output empty intelligence_feed when OSINT data was provided.
 
 This is critical. The previous architecture hallucinated 'Russian tanks at Polish border', 'NATO carrier in Baltic Sea' — those were fabrications. Never again.
 
