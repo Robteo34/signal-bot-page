@@ -23,8 +23,12 @@ const NEWS_QUERIES: Record<string, string[]> = {
   WEEKEND:         ['crypto OR bitcoin', 'geopolitical OR Russia OR Iran', 'central bank'],
 };
 
-// Trusted financial sources (filter out noise)
-const TRUSTED_SOURCES = 'reuters,bloomberg,financial-times,the-wall-street-journal,cnbc,business-insider,fortune,the-economist';
+// Post-filter by source name — preferred but not exclusive (free tier doesn't support sources= param)
+const TRUSTED_SOURCE_NAMES = [
+  'Reuters', 'Bloomberg', 'Financial Times', 'The Wall Street Journal',
+  'CNBC', 'BBC News', 'The Economist', 'Business Insider', 'Fortune',
+  'Forbes', 'MarketWatch', 'Investing.com',
+];
 
 async function fetchNewsForQuery(query: string): Promise<NewsItem[]> {
   if (!NEWS_KEY) return [];
@@ -36,7 +40,8 @@ async function fetchNewsForQuery(query: string): Promise<NewsItem[]> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
 
-    const url = `${NEWS_BASE}/everything?q=${encodeURIComponent(query)}&from=${fromTime}&sortBy=publishedAt&pageSize=5&language=en&sources=${TRUSTED_SOURCES}&apiKey=${NEWS_KEY}`;
+    // No sources= param — free tier blocks it. Post-filter instead.
+    const url = `${NEWS_BASE}/everything?q=${encodeURIComponent(query)}&from=${fromTime}&sortBy=publishedAt&pageSize=10&language=en&apiKey=${NEWS_KEY}`;
     const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timeout);
 
@@ -49,14 +54,23 @@ async function fetchNewsForQuery(query: string): Promise<NewsItem[]> {
     if (!data.articles) return [];
 
     const now = Date.now();
-    return data.articles.slice(0, 3).map((a: any) => ({
-      title:       a.title,
-      description: a.description || '',
-      source:      a.source?.name || 'Unknown',
-      url:         a.url,
-      publishedAt: a.publishedAt,
-      ageMinutes:  Math.round((now - new Date(a.publishedAt).getTime()) / 60000),
-    }));
+    return data.articles
+      .slice(0, 10)
+      .map((a: any): NewsItem => ({
+        title:       a.title,
+        description: a.description || '',
+        source:      a.source?.name || 'Unknown',
+        url:         a.url,
+        publishedAt: a.publishedAt,
+        ageMinutes:  Math.round((now - new Date(a.publishedAt).getTime()) / 60000),
+      }))
+      .filter((a: NewsItem) => {
+        const isTrusted = TRUSTED_SOURCE_NAMES.some((t) =>
+          a.source.toLowerCase().includes(t.toLowerCase())
+        );
+        return isTrusted || a.ageMinutes < 60; // trusted source OR very fresh (<1h)
+      })
+      .slice(0, 3);
   } catch (e: any) {
     if (e?.name !== 'AbortError') console.warn(`NewsAPI error for "${query}":`, e?.message ?? e);
     return [];

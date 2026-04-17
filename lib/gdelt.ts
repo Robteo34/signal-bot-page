@@ -61,7 +61,13 @@ async function gdeltQuery(query: string, timespan = '4h'): Promise<GdeltEvent[]>
     clearTimeout(timeout);
 
     if (!res.ok) return [];
-    const data = await res.json();
+    const raw = await res.text();
+    if (raw.includes('limit requests') || raw.includes('every 5 seconds')) {
+      console.warn(`GDELT rate limited: ${raw.slice(0, 100)}`);
+      return [];
+    }
+    let data: any;
+    try { data = JSON.parse(raw); } catch { return []; }
     if (!data.articles || !Array.isArray(data.articles)) return [];
 
     const now = Date.now();
@@ -93,21 +99,31 @@ export async function fetchOSINTEvents(
   _sessionName: string,
   queries?: Record<string, string>
 ): Promise<string> {
-  const queryMap     = queries ?? FALLBACK_QUERIES;
-  const queriesToRun = Object.entries(queryMap).slice(0, 6) as [string, string][];
+  const queryMap = queries ?? FALLBACK_QUERIES;
+  const entries  = Object.entries(queryMap);
 
-  // Parallel with 10s overall cap
-  const fetchPromise = Promise.all(
-    queriesToRun.map(async ([category, query]) => ({
-      category,
-      events: await gdeltQuery(query, '4h'),
-    }))
-  );
-  const timeoutPromise = new Promise<{ category: string; events: GdeltEvent[] }[]>((resolve) =>
-    setTimeout(() => resolve([]), 10_000)
-  );
+  // Prioritise topic-discovered queries (anything not a standard category key)
+  const STANDARD = new Set(['MILITARY', 'GEOPOLITICAL', 'ENERGY', 'MACRO', 'SUPPLY']);
+  const topicEntries    = entries.filter(([k]) => !STANDARD.has(k));
+  const militaryEntry   = entries.find(([k]) => k === 'MILITARY');
+  const energyEntry     = entries.find(([k]) => k === 'ENERGY');
 
-  const results = await Promise.race([fetchPromise, timeoutPromise]);
+  const finalQueries: [string, string][] = [
+    ...topicEntries.slice(0, 2),                          // up to 2 hot topics
+    ...(militaryEntry ? [militaryEntry] : []),
+    ...(energyEntry   ? [energyEntry]   : []),
+  ].slice(0, 3); // hard cap at 3 — 5.5s × 2 gaps = ~11s total
+
+  console.log(`GDELT running ${finalQueries.length} queries sequentially (rate limited)`);
+
+  // Sequential with 5.5s delay between requests to respect GDELT rate limit
+  const results: { category: string; events: GdeltEvent[] }[] = [];
+  for (let i = 0; i < finalQueries.length; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, 5500));
+    const [category, query] = finalQueries[i];
+    const events = await gdeltQuery(query, '4h');
+    results.push({ category, events });
+  }
   if (!results || results.length === 0) return '';
 
   // Dedupe by URL across all categories
