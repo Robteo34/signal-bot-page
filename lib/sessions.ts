@@ -186,29 +186,36 @@ interface NextEvent {
 }
 
 export function getNextEvent(now: Date = new Date()): NextEvent {
-  const t = toUKTime(now);
+  const t      = toUKTime(now);
   const nyOpen = getNYOpenHour(now);
 
   // Resolve UK day-of-week (BST-aware)
-  const offset  = isBST(now) ? 1 : 0;
-  const ukDate  = new Date(now.getTime() + offset * 3600_000);
-  const ukDay   = ukDate.getUTCDay(); // 0=Sun, 6=Sat
+  const offset = isBST(now) ? 1 : 0;
+  const ukDate = new Date(now.getTime() + offset * 3600_000);
+  const ukDay  = ukDate.getUTCDay(); // 0=Sun, 6=Sat
 
-  if (ukDay === 6 || ukDay === 0) {
-    // Minutes until Monday 08:00 BST/GMT (London open)
-    const daysUntilMonday = ukDay === 6 ? 2 : 1;
-    const hoursUntilMonday = daysUntilMonday * 24 - t + 8;
-    return { label: 'Markets reopen Monday', minutes: Math.round(hoursUntilMonday * 60) };
+  // ── Weekend gate ───────────────────────────────────────────────────────────
+  // Fri 21:00+ → reopen Mon: (Fri→midnight) + Sat 24h + Sun 24h + Mon 08:00
+  if (ukDay === 5 && t >= 21) {
+    return { label: 'Markets reopen Monday', minutes: Math.round(((24 - t) + 48 + 8) * 60) };
+  }
+  // All of Saturday
+  if (ukDay === 6) {
+    return { label: 'Markets reopen Monday', minutes: Math.round(((24 - t) + 24 + 8) * 60) };
+  }
+  // Sunday before London open
+  if (ukDay === 0 && t < 8) {
+    return { label: 'Markets reopen Monday', minutes: Math.round((8 - t) * 60) };
   }
 
+  // ── Intraday checkpoints (Mon–Fri daytime, Sun 08:00+) ────────────────────
   const checkpoints = [
-    { label: 'Londyn Open', time: 8 },
-    { label: 'Pre-NY', time: 13 },
-    { label: 'NY Open', time: nyOpen },
-    { label: 'Koniec overlap', time: nyOpen + 2 },
-    { label: 'Power Hour', time: 20 },
-    { label: 'Wieczór', time: 21 },
-    { label: 'Azja Open', time: 24 + 6 },
+    { label: 'Londyn Open',   time: 8        },
+    { label: 'Pre-NY',        time: 13       },
+    { label: 'NY Open',       time: nyOpen   },
+    { label: 'Koniec overlap',time: nyOpen + 2 },
+    { label: 'Power Hour',    time: 20       },
+    { label: 'Wieczór',       time: 21       },
   ];
 
   for (const cp of checkpoints) {
@@ -217,5 +224,6 @@ export function getNextEvent(now: Date = new Date()): NextEvent {
     }
   }
 
-  return { label: 'Azja Open', minutes: Math.round((30 - t) * 60) };
+  // After 21:00 on Mon–Thu (and Sun evening): Tokyo session starts at midnight
+  return { label: 'Tokio Open', minutes: Math.round((24 - t) * 60) };
 }
