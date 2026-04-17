@@ -8,7 +8,6 @@ interface PriceData {
   ftse: number | null;
   gold: number | null;
   vix: number | null;
-  btcChange: number | null;
 }
 
 interface Props {
@@ -27,9 +26,9 @@ function fmt(n: number | null, decimals = 0): string {
 function getThree(prices: PriceData | null, sessionName: string) {
   if (!prices) {
     return [
-      { value: '—', label: 'BTC/USD', change: null },
-      { value: '—', label: 'GBP/USD', change: null },
-      { value: '—', label: 'SPX', change: null },
+      { value: '—', label: 'Gold' },
+      { value: '—', label: 'GBP/USD' },
+      { value: '—', label: 'SPX' },
     ];
   }
 
@@ -39,60 +38,51 @@ function getThree(prices: PriceData | null, sessionName: string) {
   if (isAsiaOrLondon) {
     return [
       {
-        value: fmt(prices.btc),
-        label: 'BTC/USD',
-        change: prices.btcChange,
-      },
+        value: fmt(prices.gold),
+        label: 'Gold',
+              },
       {
         value: fmt(prices.gbpusd, 4),
         label: 'GBP/USD',
-        change: null,
-      },
+              },
       {
         value: fmt(prices.ftse),
         label: 'FTSE100',
-        change: null,
-      },
+              },
     ];
   }
 
   if (isEvening) {
     return [
       {
-        value: fmt(prices.btc),
-        label: 'BTC/USD',
-        change: prices.btcChange,
-      },
+        value: fmt(prices.spx),
+        label: 'SPX',
+              },
       {
         value: fmt(prices.gold),
         label: 'Gold',
-        change: null,
-      },
+              },
       {
         value: fmt(prices.vix, 2),
         label: 'VIX',
-        change: null,
-      },
+              },
     ];
   }
 
   // US sessions / overlap
   return [
     {
-      value: fmt(prices.btc),
-      label: 'BTC/USD',
-      change: prices.btcChange,
-    },
+      value: fmt(prices.gold),
+      label: 'Gold',
+          },
     {
       value: fmt(prices.gbpusd, 4),
       label: 'GBP/USD',
-      change: null,
-    },
+          },
     {
       value: fmt(prices.spx),
       label: 'SPX FUT',
-      change: null,
-    },
+          },
   ];
 }
 
@@ -121,17 +111,6 @@ export default function ThreeNumbers({ prices, sessionName }: Props) {
           <div className="text-xs mt-0.5" style={{ color: '#555' }}>
             {item.label}
           </div>
-          {item.change !== null && (
-            <div
-              className="text-xs mt-0.5"
-              style={{
-                color: item.change >= 0 ? '#5DCAA5' : '#D85A30',
-              }}
-            >
-              {item.change >= 0 ? '+' : ''}
-              {item.change.toFixed(2)}%
-            </div>
-          )}
         </div>
       ))}
     </div>
