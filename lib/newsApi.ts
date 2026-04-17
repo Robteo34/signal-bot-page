@@ -40,8 +40,12 @@ async function fetchNewsForQuery(query: string): Promise<NewsItem[]> {
     const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timeout);
 
-    if (!res.ok) return [];
+    if (!res.ok) {
+      console.warn(`NewsAPI HTTP ${res.status} for "${query}"`);
+      return [];
+    }
     const data = await res.json();
+    console.log(`NewsAPI articles returned for "${query}": ${data.articles?.length || 0}`);
     if (!data.articles) return [];
 
     const now = Date.now();
@@ -60,6 +64,7 @@ async function fetchNewsForQuery(query: string): Promise<NewsItem[]> {
 }
 
 export async function fetchSessionNews(sessionName: string): Promise<string> {
+  console.log(`NewsAPI key set: ${!!NEWS_KEY}`);
   if (!NEWS_KEY) return '';
 
   const queries = NEWS_QUERIES[sessionName] ?? NEWS_QUERIES['OVERLAP'];

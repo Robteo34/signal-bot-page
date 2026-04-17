@@ -29,8 +29,7 @@ export function generateTopicQueries(hotTopics: string[]): Record<string, string
     const sanitized = topic.replace(/[^a-zA-Z0-9 ]/g, '').trim();
     if (sanitized.length < 3) continue;
     const key = topic.slice(0, 20).toUpperCase().replace(/\s+/g, '_');
-    dynamicQueries[key] =
-      `(${sanitized}) AND (crisis OR escalation OR attack OR meeting OR announcement OR deployment OR sanctions OR disruption OR strike)`;
+    dynamicQueries[key] = `${sanitized} sourcelang:english`;
   }
 
   // Always include macro as a stable category
@@ -53,7 +52,9 @@ async function gdeltQuery(query: string, timespan = '4h'): Promise<GdeltEvent[]>
       sort:       'datedesc',
     });
 
-    const res = await fetch(`${GDELT_BASE}?${params.toString()}`, {
+    const url = `${GDELT_BASE}?${params.toString()}`;
+    console.log(`GDELT URL: ${url.slice(0, 200)}`);
+    const res = await fetch(url, {
       signal: controller.signal,
       next: { revalidate: 600 }, // cache 10 min
     } as RequestInit);

@@ -261,11 +261,8 @@ export async function POST(req: NextRequest) {
       fetchMacroCalendar().catch((e: any)             => { console.warn('Forex Factory failed:', e?.message ?? e); return ''; }),
     ]);
 
-    // Drain any already-resolved topics; 100ms grace if still pending
-    const hotTopics = await Promise.race([
-      topicsPromise,
-      new Promise<string[]>((resolve) => setTimeout(() => resolve([]), 100)),
-    ]);
+    // topicsPromise has its own 6s AbortController — just await it
+    const hotTopics = await topicsPromise;
     console.log(`Hot topics discovered: ${JSON.stringify(hotTopics)}`);
     const dynamicQueries = generateTopicQueries(hotTopics);
     console.log(`Dynamic GDELT queries: ${Object.keys(dynamicQueries).join(', ')}`);
