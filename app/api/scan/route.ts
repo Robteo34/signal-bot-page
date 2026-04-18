@@ -417,6 +417,7 @@ export async function POST(req: NextRequest) {
       }
     }
     const correlationGroups = analyzeCorrelations(correlationInputs);
+    console.log(`Correlation check: ${correlationInputs.length} actionable signals (LONG/SHORT only), ${correlationGroups.length} correlation groups found`);
     if (correlationGroups.length > 0) {
       parsedAnalysis.correlation_warnings = correlationGroups.map((g) => ({
         theme:    g.theme,
@@ -424,7 +425,7 @@ export async function POST(req: NextRequest) {
         severity: g.signals.length >= 3 ? 'high' : 'medium',
         message:  `${g.signals.length} positions correlated: ${g.theme} (${g.signals.join(', ')})`,
       }));
-      console.log(`Correlation warnings: ${JSON.stringify(parsedAnalysis.correlation_warnings)}`);
+      console.log(`Correlation warnings details: ${JSON.stringify(parsedAnalysis.correlation_warnings)}`);
     }
 
     // Rebuild text with adjusted signals so the client JSON matches
