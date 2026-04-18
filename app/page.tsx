@@ -363,6 +363,7 @@ export default function SignalBotApp() {
                     source_adjusted={sig.source_adjusted}
                     platform={sig.platform}
                     overnight_risk={sig.overnight_risk}
+                    rr_value={sig.rr_value}
                     onClick={() => { setDetailIndex(i); setScreen('detail'); }}
                   />
                   {hasId && (

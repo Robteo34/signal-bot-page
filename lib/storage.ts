@@ -37,6 +37,9 @@ export interface ScanSignal {
   source_accuracy?: number;
   source_total_signals?: number;
   source_adjusted?: boolean;
+  rr_value?: number | null;
+  rr_note?: string;
+  original_direction?: string;
 }
 
 export interface ShareOpportunity {

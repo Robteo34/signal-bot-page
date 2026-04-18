@@ -833,6 +833,17 @@ You are working ONLY from the scan data provided. These rules are NON-NEGOTIABLE
 - Empty arrays are valid and honest. Fabricated signals are not.
 - Every signal reason must start with a reference to the scan data that supports it.
 
+═══ MANDATORY R:R RULE ═══
+Every LONG/SHORT signal MUST have R:R ≥ 1.5:1 minimum (ideally 2:1+).
+- For LONG:  (target - entry) / (entry - stop) ≥ 1.5
+- For SHORT: (entry - target) / (stop - entry) ≥ 1.5
+
+Before finalising a signal, CALCULATE the R:R. If below 1.5:
+- Widen target (if technically justified by resistance/support)
+- Tighten stop (if volatility allows)
+- Otherwise downgrade to WAIT — bad R:R = no trade
+Include the R:R in your reason: e.g. 'R:R 1.8, target at resistance 2380'
+
 ═══ OUTPUT RULES ═══
 - reason, narrative, session_plan, wait_mode_reason, key_tweet_insight: in POLISH
 - action, direction, platform, overnight_risk, volatility_regime: English enums only

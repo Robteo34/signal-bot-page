@@ -16,10 +16,11 @@ interface Props {
   source_adjusted?: boolean;
   platform?: 'IG' | 'CRYPTO' | 'BOTH';
   overnight_risk?: 'HIGH' | 'MEDIUM' | 'LOW';
+  rr_value?: number | null;
   onClick?: () => void;
 }
 
-export default function SignalBar({ asset, direction, strength, source, source_accuracy, source_total_signals, source_adjusted, platform, overnight_risk, onClick }: Props) {
+export default function SignalBar({ asset, direction, strength, source, source_accuracy, source_total_signals, source_adjusted, platform, overnight_risk, rr_value, onClick }: Props) {
   const color = DIR_COLOR[direction.toUpperCase()] ?? '#888';
   const filled = Math.max(0, Math.min(10, Math.round(strength)));
   const empty = 10 - filled;
@@ -94,6 +95,13 @@ export default function SignalBar({ asset, direction, strength, source, source_a
       <div style={{ fontSize: 11, color: filled >= 8 ? color : '#444', width: 18, textAlign: 'right', flexShrink: 0 }}>
         {filled}
       </div>
+
+      {/* R:R badge */}
+      {rr_value != null && (
+        <div style={{ fontSize: 8, fontFamily: 'monospace', color: rr_value >= 1.5 ? '#5DCAA5' : '#D85A30', flexShrink: 0 }}>
+          {rr_value.toFixed(1)}R
+        </div>
+      )}
 
       {/* Overnight risk dot */}
       {overnight_risk && (

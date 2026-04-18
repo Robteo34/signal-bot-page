@@ -9,6 +9,7 @@ import {
 } from "@/lib/prompts";
 import { getSupabase } from "@/lib/supabase";
 import { adjustConfidenceBySourceHistory } from "@/lib/sourceScoring";
+import { calculateRR } from "@/lib/riskReward";
 import { screenMarkets } from "@/lib/marketScreener";
 import { fetchSessionPrices } from "@/lib/twelveData";
 import { fetchMarketauxNews } from "@/lib/marketaux";
@@ -360,6 +361,42 @@ export async function POST(req: NextRequest) {
         parsedAnalysis.signals = await adjustConfidenceBySourceHistory(parsedAnalysis.signals);
       } catch (e: any) {
         console.warn('sourceScoring adjustment failed (non-fatal):', e?.message ?? e);
+      }
+    }
+
+    // ── R:R filter — primary signal ───────────────────────────────────────────
+    if (parsedAnalysis.action === 'LONG' || parsedAnalysis.action === 'SHORT') {
+      const rrCheck = calculateRR({
+        action: parsedAnalysis.action,
+        entry:  parsedAnalysis.entry,
+        stop:   parsedAnalysis.stop,
+        target: parsedAnalysis.target,
+      });
+      if (!rrCheck.valid && rrCheck.rr !== null) {
+        console.log(`R:R filter: downgrading ${parsedAnalysis.primary_asset} ${parsedAnalysis.action} — ${rrCheck.reason}`);
+        parsedAnalysis.original_action  = parsedAnalysis.action;
+        parsedAnalysis.action           = 'WAIT';
+        parsedAnalysis.reason           = `R:R filter: ${rrCheck.reason}. Original: ${parsedAnalysis.reason}`;
+        parsedAnalysis.signal_strength  = Math.max(0, (parsedAnalysis.signal_strength ?? 0) - 3);
+      }
+      parsedAnalysis.rr_value = rrCheck.rr;
+    }
+
+    // ── R:R filter — individual signals ──────────────────────────────────────
+    if (Array.isArray(parsedAnalysis.signals)) {
+      for (const sig of parsedAnalysis.signals) {
+        const dir = (sig.direction ?? '').toUpperCase();
+        if (dir === 'LONG' || dir === 'SHORT') {
+          const rrCheck = calculateRR({ action: dir, entry: sig.entry, stop: sig.stop, target: sig.target });
+          if (!rrCheck.valid && rrCheck.rr !== null) {
+            console.log(`R:R filter: downgrading signal ${sig.asset} ${dir} — ${rrCheck.reason}`);
+            sig.original_direction = sig.direction;
+            sig.direction          = 'WAIT';
+            sig.rr_note            = rrCheck.reason;
+            sig.strength           = Math.max(0, (sig.strength ?? 0) - 3);
+          }
+          sig.rr_value = rrCheck.rr;
+        }
       }
     }
 
