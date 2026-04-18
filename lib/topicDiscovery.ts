@@ -6,7 +6,7 @@ export async function discoverHotTopics(): Promise<string[]> {
 
   try {
     const controller = new AbortController();
-    const timeout    = setTimeout(() => controller.abort(), 6_000);
+    const timeout    = setTimeout(() => controller.abort(), 8_000);
 
     const currentDate = new Date().toISOString().split('T')[0];
 
@@ -60,12 +60,29 @@ Search the web thoroughly before returning. Each topic must have VERIFIABLE rece
     });
     clearTimeout(timeout);
 
-    if (!res.ok) return [];
+    console.log(`Topic discovery HTTP status: ${res.status}`);
+    if (!res.ok) {
+      const errText = await res.text();
+      console.warn(`Topic discovery non-OK: ${res.status} — ${errText.slice(0, 300)}`);
+      return [];
+    }
+
     const data    = await res.json();
     const content = data.choices?.[0]?.message?.content ?? '';
+    console.log(`Topic discovery raw content (first 500): ${content.slice(0, 500)}`);
 
-    const match = content.match(/\[[\s\S]*?\]/);
-    if (!match) return [];
+    // Strip markdown code fences Grok sometimes wraps output in
+    const cleaned = content
+      .replace(/```json\s*/g, '')
+      .replace(/```\s*/g, '')
+      .trim();
+
+    const match = cleaned.match(/\[\s*"[\s\S]*?"\s*\]/);
+    if (!match) {
+      console.warn('Topic discovery: no JSON array found in response');
+      return [];
+    }
+    console.log(`Topic discovery matched JSON: ${match[0].slice(0, 300)}`);
 
     const topics = JSON.parse(match[0]);
     if (!Array.isArray(topics)) return [];
