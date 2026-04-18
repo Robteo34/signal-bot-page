@@ -26,18 +26,16 @@ interface MarketauxArticle {
 }
 
 const SESSION_ENTITIES: Record<string, string> = {
-  ASIA_OVERNIGHT:  'BTCUSD,ETHUSD,AUDUSD,USDJPY,NKY,HSI',
-  PRE_LONDON:      'GBPUSD,EURUSD,EURGBP,XAUUSD,XAGUSD,BCOUSD,UKX,BTCUSD',
-  LONDON:          'GBPUSD,EURUSD,XAUUSD,BCOUSD,UKX,DAX,BTCUSD,SHEL.L,BP.L',
-  PRE_NY:          'GBPUSD,EURUSD,XAUUSD,BCOUSD,SPX,NDX,NVDA,TSLA,BTCUSD',
-  OVERLAP:         'GBPUSD,EURUSD,XAUUSD,BCOUSD,SPX,NDX,UKX,NVDA,TSLA,BTCUSD',
-  US_AFTERNOON:    'SPX,NDX,DJI,NVDA,TSLA,AAPL,MSFT,BTCUSD,ETHUSD,XAUUSD',
-  EVENING_JOURNAL: 'SPX,NDX,BTCUSD,ETHUSD,XAUUSD,GBPUSD',
+  ASIA_OVERNIGHT:  'BTCUSD,ETHUSD',
+  PRE_LONDON:      'BTCUSD,ETHUSD',
+  LONDON:          'SHEL.L,BP.L,HSBA.L,BARC.L,AZN.L,BTCUSD',
+  PRE_NY:          'NVDA,TSLA,AAPL,MSFT,SPY,QQQ,BTCUSD',
+  OVERLAP:         'NVDA,TSLA,AAPL,SPY,QQQ,BTCUSD,ETHUSD',
+  US_AFTERNOON:    'NVDA,TSLA,AAPL,MSFT,AMZN,META,SPY,QQQ,BTCUSD,ETHUSD',
+  EVENING_JOURNAL: 'NVDA,TSLA,SPY,QQQ,BTCUSD,ETHUSD',
   NIGHT_MODE:      'BTCUSD,ETHUSD',
-  WEEKEND:         'BTCUSD,ETHUSD,XAUUSD',
+  WEEKEND:         'BTCUSD,ETHUSD',
 };
-
-const INDUSTRY_TOPICS = ['Energy', 'Financial Services', 'Basic Materials'];
 
 export async function fetchMarketauxNews(sessionName: string): Promise<string> {
   if (!MARKETAUX_KEY) {
@@ -46,29 +44,28 @@ export async function fetchMarketauxNews(sessionName: string): Promise<string> {
   }
 
   try {
-    const symbols      = SESSION_ENTITIES[sessionName] ?? SESSION_ENTITIES['OVERLAP'];
+    const symbols        = SESSION_ENTITIES[sessionName] ?? SESSION_ENTITIES['OVERLAP'];
     const publishedAfter = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
 
     const entityUrl = `${MARKETAUX_BASE}/news/all?` + new URLSearchParams({
       symbols,
-      filter_entities:    'true',
-      must_have_entities: 'true',
-      language:           'en',
-      published_after:    publishedAfter,
-      limit:              '20',
-      sort:               'published_desc',
-      api_token:          MARKETAUX_KEY,
+      filter_entities: 'true',
+      language:        'en',
+      published_after: publishedAfter,
+      limit:           '10',
+      api_token:       MARKETAUX_KEY,
     }).toString();
 
     const macroUrl = `${MARKETAUX_BASE}/news/all?` + new URLSearchParams({
-      industries:     INDUSTRY_TOPICS.join(','),
-      countries:      'us,gb,eu',
-      language:       'en',
+      countries:       'us,gb',
+      language:        'en',
       published_after: publishedAfter,
-      limit:          '10',
-      sort:           'published_desc',
-      api_token:      MARKETAUX_KEY,
+      limit:           '10',
+      api_token:       MARKETAUX_KEY,
     }).toString();
+
+    console.log(`Marketaux entity URL: ${entityUrl.replace(MARKETAUX_KEY, 'XXX')}`);
+    console.log(`Marketaux macro URL: ${macroUrl.replace(MARKETAUX_KEY, 'XXX')}`);
 
     const controller = new AbortController();
     const timeout    = setTimeout(() => controller.abort(), 8000);
@@ -83,8 +80,10 @@ export async function fetchMarketauxNews(sessionName: string): Promise<string> {
     const allArticles: MarketauxArticle[] = [];
 
     for (const res of [entityRes, macroRes]) {
-      if (!res || !res.ok) {
-        if (res) console.warn(`Marketaux HTTP ${res.status}`);
+      if (!res) continue;
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => '');
+        console.warn(`Marketaux HTTP ${res.status}: ${errBody.slice(0, 300)}`);
         continue;
       }
       const data = await res.json();
@@ -123,7 +122,7 @@ export async function fetchMarketauxNews(sessionName: string): Promise<string> {
       return '';
     }
 
-    console.log(`Marketaux: ${sorted.length} articles with entities`);
+    console.log(`Marketaux: ${sorted.length} articles`);
 
     const lines = sorted.map((a) => {
       const topEntities = a.entities
