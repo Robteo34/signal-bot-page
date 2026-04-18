@@ -1,8 +1,17 @@
 import { Redis } from '@upstash/redis';
 
-const redis = Redis.fromEnv();
+const url   = process.env.KV_REST_API_URL   || process.env.UPSTASH_REDIS_REST_URL   || '';
+const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '';
+
+const hasRedis = !!(url && token);
+console.log(`Redis initialized: ${hasRedis ? 'YES' : 'NO (missing env vars)'}`);
+
+const redis = hasRedis
+  ? new Redis({ url, token })
+  : null;
 
 export async function cacheGet<T>(key: string): Promise<T | null> {
+  if (!redis) return null;
   try {
     const value = await redis.get<T>(key);
     return value;
@@ -13,6 +22,7 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
 }
 
 export async function cacheSet<T>(key: string, value: T, ttlSeconds: number): Promise<void> {
+  if (!redis) return;
   try {
     await redis.set(key, value, { ex: ttlSeconds });
   } catch (e) {
@@ -25,6 +35,11 @@ export async function cacheGetOrFetch<T>(
   ttlSeconds: number,
   fetcher: () => Promise<T>
 ): Promise<T> {
+  if (!redis) {
+    console.log(`Cache SKIP (no redis): ${key}`);
+    return fetcher();
+  }
+
   const cached = await cacheGet<T>(key);
   if (cached !== null) {
     console.log(`Cache HIT: ${key}`);
@@ -49,6 +64,11 @@ export async function cacheGetOrFetchWithFallback<T>(
   staleTtlSeconds: number,
   fetcher: () => Promise<T>
 ): Promise<T> {
+  if (!redis) {
+    console.log(`Cache SKIP (no redis): ${key}`);
+    return fetcher();
+  }
+
   const cached = await cacheGet<T>(key);
   if (cached !== null) {
     console.log(`Cache HIT: ${key}`);
