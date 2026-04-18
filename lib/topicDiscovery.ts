@@ -12,7 +12,7 @@ async function fetchHotTopics(): Promise<string[]> {
 
   try {
     const controller = new AbortController();
-    const timeout    = setTimeout(() => controller.abort(), 25_000);
+    const timeout    = setTimeout(() => controller.abort(), 35_000);
 
     const currentDate = new Date().toISOString().split('T')[0];
 
