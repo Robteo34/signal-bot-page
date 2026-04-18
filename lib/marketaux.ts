@@ -45,7 +45,7 @@ export async function fetchMarketauxNews(sessionName: string): Promise<string> {
 
   try {
     const symbols        = SESSION_ENTITIES[sessionName] ?? SESSION_ENTITIES['OVERLAP'];
-    const publishedAfter = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
+    const publishedAfter = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString().split('.')[0];
 
     const entityUrl = `${MARKETAUX_BASE}/news/all?` + new URLSearchParams({
       symbols,
