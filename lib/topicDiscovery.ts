@@ -118,7 +118,7 @@ Example: ["Fed May rate decision", "Hormuz blockade oil spike", "TSLA earnings b
 
 export async function discoverHotTopics(): Promise<string[]> {
   return cacheGetOrFetch(
-    'topics:hot',
+    'topics:hot:v2',
     30 * 60, // 30 minute cache — topics don't change minute-to-minute
     fetchHotTopics
   );
