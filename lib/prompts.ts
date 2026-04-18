@@ -792,7 +792,7 @@ ABSOLUTE RULES:
 4. Geopolitical/military signals: REQUIRE a verified news item with ageMinutes <= 240 (4 hours). Without one, no signal — set strength to 0 or skip.
 5. Sentiment scores from Marketaux: >+0.15 = bullish catalyst, <-0.15 = bearish catalyst, between = neutral/noise. Use these to grade signal strength.
 6. If an entity has sentiment_score < -0.3, treat it as a significant bearish driver. If > +0.3, treat as significant bullish driver.
-7. If verified news doesn't support a signal, use technical/price reasoning only (e.g., 'RSI oversold + volume spike' from Alpha Vantage data).
+7. If verified news doesn't support a signal, use technical/price reasoning only — use price momentum (change% from Twelve Data live prices) as the technical signal. RSI/volume data is not available this scan.
 8. The intelligence_feed and breaking_osint sections must ONLY contain items backed by verified news data.
 
 VIOLATING THESE RULES = HALLUCINATION = TRADER LOSES MONEY = TRADER STOPS USING BOT

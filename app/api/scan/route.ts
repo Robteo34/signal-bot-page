@@ -9,7 +9,6 @@ import {
 } from "@/lib/prompts";
 import { getSupabase } from "@/lib/supabase";
 import { adjustConfidenceBySourceHistory } from "@/lib/sourceScoring";
-import { getMarketData } from "@/lib/alphaVantage";
 import { screenMarkets } from "@/lib/marketScreener";
 import { fetchSessionPrices } from "@/lib/twelveData";
 import { fetchMarketauxNews } from "@/lib/marketaux";
@@ -204,26 +203,6 @@ async function saveToDbSafe(params: Parameters<typeof saveToDb>[0]): Promise<Rec
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const TICKER_EXCLUDE = new Set([
-  'LONG','SHORT','WAIT','HIGH','LOW','MEDIUM','HEDGE','WATCH','SOON','POST',
-  'JSON','NULL','TRUE','SCAN','DATA','VERIFIED','INFERRED','BULLISH','BEARISH',
-  'NEUTRAL','MILITARY','MACRO','EARNINGS','OPTIONS','CRYPTO','SUPPLY','REGULA',
-  'IMMEDIATE','WITH','FROM','THAT','THIS','HAVE','BEEN','WILL','WERE','THEY',
-  'RICH','SPARSE','EMPTY','MODERATE','EXIT','BOTH','NONE','ONLY',
-]);
-
-function extractTopTickers(scanData: unknown): string[] {
-  const text = JSON.stringify(scanData);
-  const matches = text.match(/\b[A-Z]{2,5}\b/g) ?? [];
-  const freq = new Map<string, number>();
-  for (const m of matches) {
-    if (!TICKER_EXCLUDE.has(m)) freq.set(m, (freq.get(m) ?? 0) + 1);
-  }
-  return [...freq.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 4)
-    .map(([t]) => t);
-}
 
 const XAI_URL = "https://api.x.ai/v1/chat/completions";
 
@@ -276,7 +255,7 @@ export async function POST(req: NextRequest) {
     console.log(`OSINT preview: ${osintEvents?.slice(0, 200) || 'EMPTY'}`);
     if (screenerData)  console.log('Screener:', screenerData.slice(0, 120));
     if (livePrices)    console.log('Twelve Data: fetched', (livePrices.match(/\n/g) ?? []).length - 4, 'prices');
-    if (recentNews)    console.log('NewsAPI: fetched', (recentNews.match(/^\[/mg) ?? []).length, 'articles');
+    if (recentNews)    console.log('Marketaux: fetched', (recentNews.match(/^\[/mg) ?? []).length, 'articles');
     if (macroCalendar) console.log('Forex Factory: fetched', (macroCalendar.match(/^\[/mg) ?? []).length, 'events');
 
     const scanUserContent = screenerData
@@ -328,24 +307,10 @@ export async function POST(req: NextRequest) {
       scanPayload = scanRawText;
     }
 
-    // ── Extract top tickers from scan + fetch Alpha Vantage data (10s cap) ──
-    let technicalData = '';
-    try {
-      const topTickers = extractTopTickers(parsedScan);
-      console.log('Top tickers from scan:', topTickers);
-      const avTimeout = new Promise<string>((resolve) =>
-        setTimeout(() => { console.warn('Alpha Vantage timed out after 10s'); resolve(''); }, 10_000)
-      );
-      technicalData = await Promise.race([getMarketData(topTickers), avTimeout]);
-      if (technicalData) console.log('Alpha Vantage:', technicalData.slice(0, 120));
-    } catch (e: any) {
-      console.warn('Alpha Vantage fetch failed (non-fatal):', e?.message ?? e);
-    }
-
     // ── Call 2: ANALYZE ───────────────────────────────────────────────────────
     const analyzeStart = Date.now();
 
-    const analyzePayload = [screenerData, technicalData, scanPayload]
+    const analyzePayload = [screenerData, scanPayload]
       .filter(Boolean)
       .join('\n\n');
 
