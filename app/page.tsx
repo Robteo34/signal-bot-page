@@ -484,10 +484,18 @@ export default function SignalBotApp() {
         {/* History button */}
         <button
           onClick={() => setScreen('history')}
-          style={{ color: '#444', background: 'none', border: 'none', fontSize: 11, fontFamily: 'monospace', minHeight: 44, minWidth: 60, cursor: 'pointer', padding: 0 }}
+          style={{ color: '#444', background: 'none', border: 'none', fontSize: 11, fontFamily: 'monospace', minHeight: 44, minWidth: 44, cursor: 'pointer', padding: 0 }}
         >
-          📊 hist
+          hist
         </button>
+
+        {/* Stats link */}
+        <a
+          href="/stats"
+          style={{ color: '#444', fontSize: 11, fontFamily: 'monospace', minHeight: 44, minWidth: 44, display: 'flex', alignItems: 'center', textDecoration: 'none' }}
+        >
+          stats
+        </a>
       </div>
 
       {/* ── Scan error toast ────────────────────────────────────────────────── */}

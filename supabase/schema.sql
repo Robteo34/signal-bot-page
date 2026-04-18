@@ -38,7 +38,8 @@ create table if not exists signals (
   stop             text,
   target           text,
   overnight_risk   text,                      -- HIGH | MEDIUM | LOW
-  session_relevant boolean
+  session_relevant boolean,
+  session_name     text                       -- denormalized from parent scan row
 );
 
 -- ── source_scores ─────────────────────────────────────────────────────────────

@@ -123,6 +123,7 @@ async function saveToDb(params: {
   if (signals.length > 0) {
     const signalRows = signals.map((s) => ({
       scan_id:          scanId,
+      session_name:     sessionName,
       asset:            s.asset            ?? null,
       direction:        s.direction        ?? null,
       strength:         s.strength         ?? null,
