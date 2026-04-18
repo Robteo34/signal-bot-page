@@ -147,6 +147,12 @@ export interface ScanResult {
   breaking_osint?: BreakingOsint[];
   top_intelligence_accounts?: IntelAccount[];
   countdown_event: { label: string; minutes: number };
+  correlation_warnings?: Array<{
+    theme: string;
+    assets: string[];
+    severity: 'high' | 'medium';
+    message: string;
+  }>;
   // legacy / optional
   macro_context?: {
     risk_mood: string;

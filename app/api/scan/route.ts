@@ -10,6 +10,7 @@ import {
 import { getSupabase } from "@/lib/supabase";
 import { adjustConfidenceBySourceHistory } from "@/lib/sourceScoring";
 import { calculateRR } from "@/lib/riskReward";
+import { analyzeCorrelations } from "@/lib/correlation";
 import { screenMarkets } from "@/lib/marketScreener";
 import { fetchSessionPrices } from "@/lib/twelveData";
 import { fetchMarketauxNews } from "@/lib/marketaux";
@@ -400,6 +401,30 @@ export async function POST(req: NextRequest) {
           sig.rr_value = rrCheck.rr;
         }
       }
+    }
+
+    // ── Correlation analysis ──────────────────────────────────────────────────
+    const correlationInputs: Array<{ asset: string; action: string }> = [];
+    if (parsedAnalysis.primary_asset && (parsedAnalysis.action === 'LONG' || parsedAnalysis.action === 'SHORT')) {
+      correlationInputs.push({ asset: parsedAnalysis.primary_asset, action: parsedAnalysis.action });
+    }
+    if (Array.isArray(parsedAnalysis.signals)) {
+      for (const sig of parsedAnalysis.signals) {
+        const dir = (sig.direction ?? '').toUpperCase();
+        if ((dir === 'LONG' || dir === 'SHORT') && sig.asset) {
+          correlationInputs.push({ asset: sig.asset, action: dir });
+        }
+      }
+    }
+    const correlationGroups = analyzeCorrelations(correlationInputs);
+    if (correlationGroups.length > 0) {
+      parsedAnalysis.correlation_warnings = correlationGroups.map((g) => ({
+        theme:    g.theme,
+        assets:   g.signals,
+        severity: g.signals.length >= 3 ? 'high' : 'medium',
+        message:  `${g.signals.length} positions correlated: ${g.theme} (${g.signals.join(', ')})`,
+      }));
+      console.log(`Correlation warnings: ${JSON.stringify(parsedAnalysis.correlation_warnings)}`);
     }
 
     // Rebuild text with adjusted signals so the client JSON matches

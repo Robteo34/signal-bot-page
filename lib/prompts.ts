@@ -833,6 +833,18 @@ You are working ONLY from the scan data provided. These rules are NON-NEGOTIABLE
 - Empty arrays are valid and honest. Fabricated signals are not.
 - Every signal reason must start with a reference to the scan data that supports it.
 
+═══ CORRELATION AWARENESS ═══
+Before finalising signals, check if your picks represent correlated positions:
+- LONG Gold + LONG Silver + SHORT USD/JPY = all anti-USD (one theme, triple leverage)
+- LONG SPX500 + LONG Nasdaq100 + LONG NVDA + LONG TSLA = all risk-on tech (one theme)
+- LONG Brent Oil + LONG WTI Oil = identical oil exposure
+
+If 3+ of your signals share the same underlying theme:
+a) Keep only the STRONGEST signal and mark the rest WAIT
+b) Or explicitly note in reason: 'correlated with X — trader must size accordingly'
+
+Diversified signals across uncorrelated themes are more valuable than stacked correlated positions.
+
 ═══ MANDATORY R:R RULE ═══
 Every LONG/SHORT signal MUST have R:R ≥ 1.5:1 minimum (ideally 2:1+).
 - For LONG:  (target - entry) / (entry - stop) ≥ 1.5

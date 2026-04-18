@@ -328,6 +328,23 @@ export default function SignalBotApp() {
           </>
         )}
 
+        {/* ── Correlation warnings ───────────────────────────────────────── */}
+        {(result.correlation_warnings?.length ?? 0) > 0 && (
+          <div style={{ margin: '0 12px 8px', padding: '10px 12px', border: '1px solid #EF9F2744', borderRadius: 6, background: '#EF9F2710' }}>
+            <div style={{ fontSize: 9, fontFamily: 'monospace', color: '#EF9F27', fontWeight: 'bold', letterSpacing: '0.1em', marginBottom: 4 }}>
+              ⚠ KORELACJA
+            </div>
+            {result.correlation_warnings!.map((w, i) => (
+              <div key={i} style={{ fontSize: 10, fontFamily: 'monospace', color: '#EF9F27CC', marginBottom: 2 }}>
+                {w.severity === 'high' ? '🔴' : '🟡'} {w.message}
+              </div>
+            ))}
+            <div style={{ fontSize: 9, fontFamily: 'monospace', color: '#EF9F2766', marginTop: 4, fontStyle: 'italic' }}>
+              Rozważ redukcję ryzyka — to de facto jedna pozycja.
+            </div>
+          </div>
+        )}
+
         {/* ── IG Signals (always shown) ──────────────────────────────────── */}
         {igSignals.length > 0 && (
           <div>
