@@ -10,6 +10,13 @@ const redis = hasRedis
   ? new Redis({ url, token })
   : null;
 
+function shouldCache<T>(value: T): boolean {
+  if (value === null || value === undefined) return false;
+  if (Array.isArray(value) && value.length === 0) return false;
+  if (typeof value === 'string' && value.length === 0) return false;
+  return true;
+}
+
 export async function cacheGet<T>(key: string): Promise<T | null> {
   if (!redis) return null;
   try {
@@ -49,8 +56,10 @@ export async function cacheGetOrFetch<T>(
   console.log(`Cache MISS: ${key} — fetching fresh`);
   const fresh = await fetcher();
 
-  if (fresh && (typeof fresh !== 'string' || fresh.length > 0)) {
+  if (shouldCache(fresh)) {
     await cacheSet(key, fresh, ttlSeconds);
+  } else {
+    console.log(`Cache SKIP save (empty/null result): ${key}`);
   }
 
   return fresh;
@@ -79,12 +88,14 @@ export async function cacheGetOrFetchWithFallback<T>(
     console.log(`Cache MISS: ${key} — fetching fresh`);
     const fresh = await fetcher();
 
-    if (fresh && (typeof fresh !== 'string' || fresh.length > 0)) {
-      // Save to both fresh cache (15min) and stale fallback (24h)
+    if (shouldCache(fresh)) {
+      // Save to both fresh cache and stale fallback
       await cacheSet(key, fresh, ttlSeconds);
       await cacheSet(staleKey, fresh, staleTtlSeconds);
       return fresh;
     }
+
+    console.log(`Cache SKIP save (empty/null result): ${key}`);
 
     // Empty fresh response — try stale fallback
     const stale = await cacheGet<T>(staleKey);
