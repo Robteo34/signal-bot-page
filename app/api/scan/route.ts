@@ -12,7 +12,7 @@ import { adjustConfidenceBySourceHistory } from "@/lib/sourceScoring";
 import { getMarketData } from "@/lib/alphaVantage";
 import { screenMarkets } from "@/lib/marketScreener";
 import { fetchSessionPrices } from "@/lib/twelveData";
-import { fetchSessionNews } from "@/lib/newsApi";
+import { fetchMarketauxNews } from "@/lib/marketaux";
 import { fetchMacroCalendar } from "@/lib/economicCalendar";
 import { fetchOSINTEvents, generateTopicQueries } from "@/lib/gdelt";
 import { discoverHotTopics } from "@/lib/topicDiscovery";
@@ -257,7 +257,7 @@ export async function POST(req: NextRequest) {
     const [screenerData, livePrices, recentNews, macroCalendar] = await Promise.all([
       screenMarkets().catch((e: any)                 => { console.warn('Screener failed:', e?.message ?? e); return ''; }),
       fetchSessionPrices(sessionName).catch((e: any)  => { console.warn('Twelve Data failed:', e?.message ?? e); return ''; }),
-      fetchSessionNews(sessionName).catch((e: any)    => { console.warn('NewsAPI failed:', e?.message ?? e); return ''; }),
+      fetchMarketauxNews(sessionName).catch((e: any)  => { console.warn('Marketaux failed:', e?.message ?? e); return ''; }),
       fetchMacroCalendar().catch((e: any)             => { console.warn('Forex Factory failed:', e?.message ?? e); return ''; }),
     ]);
 

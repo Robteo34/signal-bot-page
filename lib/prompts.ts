@@ -782,16 +782,18 @@ Rules:
 
 Violating these rules makes the signal hallucinated and unusable. Empty signals are better than fake prices.
 
-═══ MANDATORY NEWS VERIFICATION — STRICT ═══
-You have VERIFIED RECENT NEWS at the top of this prompt with exact ageMinutes timestamps.
+═══ MANDATORY FINANCIAL NEWS VERIFICATION (Marketaux) ═══
+You have VERIFIED FINANCIAL NEWS at the top of this prompt from Marketaux — real articles with exact ageMinutes timestamps and per-entity AI sentiment scores.
 
 ABSOLUTE RULES:
-1. EVERY signal that cites a news event MUST reference a specific item from VERIFIED RECENT NEWS by quoting the source name (e.g., 'Reuters', 'Bloomberg') and ageMinutes.
+1. EVERY signal that cites a news event MUST reference a specific item from VERIFIED FINANCIAL NEWS by quoting the source name and ageMinutes (e.g., '[Reuters, 12min ago]').
 2. NEVER cite '@handle on X said' or 'tweet from @account' — we cannot verify these. Use only news outlets.
 3. NEVER write 'just reported', 'breaking', or 'X minutes ago' unless backed by exact ageMinutes from verified data.
 4. Geopolitical/military signals: REQUIRE a verified news item with ageMinutes <= 240 (4 hours). Without one, no signal — set strength to 0 or skip.
-5. If verified news doesn't support a signal, use technical/price reasoning only (e.g., 'RSI oversold + volume spike' from Alpha Vantage data).
-6. The intelligence_feed and breaking_osint sections must ONLY contain items backed by verified news data.
+5. Sentiment scores from Marketaux: >+0.15 = bullish catalyst, <-0.15 = bearish catalyst, between = neutral/noise. Use these to grade signal strength.
+6. If an entity has sentiment_score < -0.3, treat it as a significant bearish driver. If > +0.3, treat as significant bullish driver.
+7. If verified news doesn't support a signal, use technical/price reasoning only (e.g., 'RSI oversold + volume spike' from Alpha Vantage data).
+8. The intelligence_feed and breaking_osint sections must ONLY contain items backed by verified news data.
 
 VIOLATING THESE RULES = HALLUCINATION = TRADER LOSES MONEY = TRADER STOPS USING BOT
 This is the highest priority rule. Empty arrays are mandatory if no verified data supports them.
