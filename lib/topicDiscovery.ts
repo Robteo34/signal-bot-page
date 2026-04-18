@@ -110,8 +110,8 @@ Example: ["Fed May rate decision", "Hormuz blockade oil spike", "TSLA earnings b
       console.warn(`Topic discovery JSON parse failed: ${e}`);
       return [];
     }
-  } catch (e: any) {
-    if (e?.name !== 'AbortError') console.warn('Topic discovery error:', e?.message ?? e);
+  } catch (e) {
+    console.error('Topic discovery FETCH ERROR:', e instanceof Error ? e.message : e);
     return [];
   }
 }
