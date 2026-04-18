@@ -33,10 +33,10 @@ const SYMBOL_MAP: Record<string, string> = {
 // MAX 7 per session — all fetched in parallel, no batching
 const SESSION_UNIVERSE: Record<string, string[]> = {
   ASIA_OVERNIGHT:  ['BTC/USD', 'ETH/USD', 'USD/JPY', 'Gold', 'Nikkei225', 'AUD/USD', 'Hang Seng'],
-  PRE_LONDON:      ['GBP/USD', 'EUR/USD', 'Gold', 'Brent Oil', 'FTSE100', 'BTC/USD', 'EUR/GBP'],
-  LONDON:          ['GBP/USD', 'EUR/USD', 'Gold', 'Brent Oil', 'FTSE100', 'DAX', 'BTC/USD'],
-  PRE_NY:          ['GBP/USD', 'EUR/USD', 'SPX500', 'Nasdaq100', 'Gold', 'BTC/USD', 'VIX'],
-  OVERLAP:         ['SPX500', 'Nasdaq100', 'GBP/USD', 'EUR/USD', 'Gold', 'BTC/USD', 'VIX'],
+  PRE_LONDON:      ['GBP/USD', 'EUR/USD', 'Gold', 'Brent Oil', 'FTSE100', 'BTC/USD', 'ETH/USD'],
+  LONDON:          ['GBP/USD', 'EUR/USD', 'Gold', 'Brent Oil', 'FTSE100', 'BTC/USD', 'ETH/USD'],
+  PRE_NY:          ['GBP/USD', 'SPX500', 'Nasdaq100', 'Gold', 'BTC/USD', 'ETH/USD', 'VIX'],
+  OVERLAP:         ['SPX500', 'Nasdaq100', 'GBP/USD', 'Gold', 'BTC/USD', 'ETH/USD', 'VIX'],
   US_AFTERNOON:    ['SPX500', 'Nasdaq100', 'NVDA', 'TSLA', 'BTC/USD', 'ETH/USD', 'VIX'],
   EVENING_JOURNAL: ['SPX500', 'Nasdaq100', 'BTC/USD', 'Gold', 'GBP/USD', 'ETH/USD', 'VIX'],
   NIGHT_MODE:      ['BTC/USD', 'ETH/USD', 'Gold'],

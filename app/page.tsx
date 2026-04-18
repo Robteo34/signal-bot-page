@@ -409,7 +409,14 @@ export default function SignalBotApp() {
 
         {/* ── Crypto (non-IG) ─────────────────────────────────────────────── */}
         {result.crypto_update && (
-          <CryptoSection btc={result.crypto_update.btc} eth={result.crypto_update.eth} />
+          <CryptoSection
+            btc={result.crypto_update.btc}
+            eth={{
+              ...result.crypto_update.eth,
+              price: result.crypto_update.eth?.price
+                || (prices?.eth ? `$${Math.round(prices.eth).toLocaleString('en-GB')} (live)` : ''),
+            }}
+          />
         )}
 
         {/* ── Intelligence Feed ───────────────────────────────────────────── */}
