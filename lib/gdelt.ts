@@ -31,13 +31,16 @@ export function generateTopicQueries(hotTopics: string[]): Record<string, string
     const sanitized = topic.replace(/[^a-zA-Z0-9 ]/g, '').trim();
     if (sanitized.length < 3) continue;
     const key = topic.slice(0, 20).toUpperCase().replace(/\s+/g, '_');
-    dynamicQueries[key] = `${sanitized} sourcelang:english`;
+    // Use first 2 meaningful words OR'd — GDELT chokes on 4+ word phrases
+    const words = sanitized.split(/\s+/).filter((w) => w.length > 3).slice(0, 2);
+    if (words.length >= 2) {
+      dynamicQueries[key] = `(${words[0]} OR ${words[1]})`;
+    } else if (words.length === 1) {
+      dynamicQueries[key] = words[0];
+    }
   }
 
-  // Always include macro as a stable category
-  dynamicQueries['MACRO'] = FALLBACK_QUERIES.MACRO;
-
-  return Object.keys(dynamicQueries).length > 1 ? dynamicQueries : FALLBACK_QUERIES;
+  return Object.keys(dynamicQueries).length > 0 ? dynamicQueries : FALLBACK_QUERIES;
 }
 
 async function gdeltQuery(query: string, timespan = '4h'): Promise<GdeltEvent[]> {
@@ -119,11 +122,16 @@ async function fetchOSINTEventsRaw(
   const militaryEntry = entries.find(([k]) => k === 'MILITARY');
   const energyEntry   = entries.find(([k]) => k === 'ENERGY');
 
-  const finalQueries: [string, string][] = [
-    ...topicEntries.slice(0, 2),
-    ...(militaryEntry ? [militaryEntry] : []),
-    ...(energyEntry   ? [energyEntry]   : []),
-  ].slice(0, 3);
+  // Always run MILITARY + ENERGY (stable fallbacks), plus one topic query if available.
+  // Pull MILITARY/ENERGY from FALLBACK_QUERIES if not present in queryMap (topic-only maps).
+  const militaryQuery = (militaryEntry ? militaryEntry[1] : null) ?? FALLBACK_QUERIES.MILITARY;
+  const energyQuery   = (energyEntry   ? energyEntry[1]   : null) ?? FALLBACK_QUERIES.ENERGY;
+
+  const queriesToRun: [string, string][] = [];
+  if (topicEntries.length > 0) queriesToRun.push(topicEntries[0]);
+  queriesToRun.push(['MILITARY', militaryQuery]);
+  queriesToRun.push(['ENERGY',   energyQuery]);
+  const finalQueries = queriesToRun.slice(0, 3);
 
   console.log(`GDELT running ${finalQueries.length} queries sequentially (rate limited)`);
 

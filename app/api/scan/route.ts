@@ -372,6 +372,7 @@ export async function POST(req: NextRequest) {
         stop:   parsedAnalysis.stop,
         target: parsedAnalysis.target,
       });
+      console.log(`R:R check: ${parsedAnalysis.primary_asset} ${parsedAnalysis.action} — ${rrCheck.reason}`);
       if (!rrCheck.valid && rrCheck.rr !== null) {
         console.log(`R:R filter: downgrading ${parsedAnalysis.primary_asset} ${parsedAnalysis.action} — ${rrCheck.reason}`);
         parsedAnalysis.original_action  = parsedAnalysis.action;
@@ -388,6 +389,7 @@ export async function POST(req: NextRequest) {
         const dir = (sig.direction ?? '').toUpperCase();
         if (dir === 'LONG' || dir === 'SHORT') {
           const rrCheck = calculateRR({ action: dir, entry: sig.entry, stop: sig.stop, target: sig.target });
+          console.log(`R:R check: ${sig.asset} ${dir} — ${rrCheck.reason}`);
           if (!rrCheck.valid && rrCheck.rr !== null) {
             console.log(`R:R filter: downgrading signal ${sig.asset} ${dir} — ${rrCheck.reason}`);
             sig.original_direction = sig.direction;
