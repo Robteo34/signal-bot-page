@@ -53,22 +53,34 @@ async function gdeltQuery(query: string, timespan = '4h'): Promise<GdeltEvent[]>
     });
 
     const url = `${GDELT_BASE}?${params.toString()}`;
-    console.log(`GDELT URL: ${url.slice(0, 200)}`);
+    console.log(`GDELT full URL length=${url.length}: ${url}`);
     const res = await fetch(url, {
       signal: controller.signal,
-      next: { revalidate: 600 }, // cache 10 min
+      next: { revalidate: 600 },
     } as RequestInit);
     clearTimeout(timeout);
 
-    if (!res.ok) return [];
+    console.log(`GDELT response status: ${res.status}`);
+    if (!res.ok) {
+      console.warn(`GDELT non-OK: ${res.status}`);
+      return [];
+    }
     const raw = await res.text();
+    console.log(`GDELT raw response first 300 chars: ${raw.slice(0, 300)}`);
     if (raw.includes('limit requests') || raw.includes('every 5 seconds')) {
-      console.warn(`GDELT rate limited: ${raw.slice(0, 100)}`);
+      console.warn('GDELT rate limited');
       return [];
     }
     let data: any;
-    try { data = JSON.parse(raw); } catch { return []; }
-    if (!data.articles || !Array.isArray(data.articles)) return [];
+    try { data = JSON.parse(raw); } catch (e) {
+      console.warn(`GDELT JSON parse failed: ${e}`);
+      return [];
+    }
+    if (!data.articles || !Array.isArray(data.articles)) {
+      console.warn(`GDELT no articles array, data keys: ${Object.keys(data).join(',')}`);
+      return [];
+    }
+    console.log(`GDELT articles count: ${data.articles.length}`);
 
     const now = Date.now();
     return data.articles.slice(0, 5).map((a: any) => {
@@ -121,7 +133,7 @@ export async function fetchOSINTEvents(
   for (let i = 0; i < finalQueries.length; i++) {
     if (i > 0) await new Promise((r) => setTimeout(r, 5500));
     const [category, query] = finalQueries[i];
-    const events = await gdeltQuery(query, '4h');
+    const events = await gdeltQuery(query, '24h');
     results.push({ category, events });
   }
   if (!results || results.length === 0) return '';

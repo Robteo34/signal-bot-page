@@ -33,8 +33,8 @@ const TRUSTED_SOURCE_NAMES = [
 async function fetchNewsForQuery(query: string): Promise<NewsItem[]> {
   if (!NEWS_KEY) return [];
 
-  // Only news from last 4 hours — anything older is stale for trading
-  const fromTime = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
+  // Expand to 24h window for diagnostics (was 4h — may have been too narrow)
+  const fromTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
   try {
     const controller = new AbortController();
@@ -42,15 +42,21 @@ async function fetchNewsForQuery(query: string): Promise<NewsItem[]> {
 
     // No sources= param — free tier blocks it. Post-filter instead.
     const url = `${NEWS_BASE}/everything?q=${encodeURIComponent(query)}&from=${fromTime}&sortBy=publishedAt&pageSize=10&language=en&apiKey=${NEWS_KEY}`;
+    console.log(`NewsAPI full URL: ${url.replace(NEWS_KEY!, 'XXX')}`);
     const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timeout);
 
+    console.log(`NewsAPI response status: ${res.status}`);
     if (!res.ok) {
-      console.warn(`NewsAPI HTTP ${res.status} for "${query}"`);
+      const errText = await res.text();
+      console.warn(`NewsAPI non-OK: ${res.status} — ${errText.slice(0, 200)}`);
       return [];
     }
     const data = await res.json();
-    console.log(`NewsAPI articles returned for "${query}": ${data.articles?.length || 0}`);
+    console.log(`NewsAPI totalResults=${data.totalResults}, articles=${data.articles?.length || 0}`);
+    if (data.status !== 'ok') {
+      console.warn(`NewsAPI error response: ${JSON.stringify(data).slice(0, 200)}`);
+    }
     if (!data.articles) return [];
 
     const now = Date.now();
