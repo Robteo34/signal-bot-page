@@ -1,3 +1,5 @@
+import { cacheGetOrFetchWithFallback } from './cache';
+
 interface GdeltEvent {
   title: string;
   url: string;
@@ -107,28 +109,24 @@ async function gdeltQuery(query: string, timespan = '4h'): Promise<GdeltEvent[]>
   }
 }
 
-export async function fetchOSINTEvents(
-  _sessionName: string,
-  queries?: Record<string, string>
+async function fetchOSINTEventsRaw(
+  queryMap: Record<string, string>
 ): Promise<string> {
-  const queryMap = queries ?? FALLBACK_QUERIES;
   const entries  = Object.entries(queryMap);
 
-  // Prioritise topic-discovered queries (anything not a standard category key)
   const STANDARD = new Set(['MILITARY', 'GEOPOLITICAL', 'ENERGY', 'MACRO', 'SUPPLY']);
-  const topicEntries    = entries.filter(([k]) => !STANDARD.has(k));
-  const militaryEntry   = entries.find(([k]) => k === 'MILITARY');
-  const energyEntry     = entries.find(([k]) => k === 'ENERGY');
+  const topicEntries  = entries.filter(([k]) => !STANDARD.has(k));
+  const militaryEntry = entries.find(([k]) => k === 'MILITARY');
+  const energyEntry   = entries.find(([k]) => k === 'ENERGY');
 
   const finalQueries: [string, string][] = [
-    ...topicEntries.slice(0, 2),                          // up to 2 hot topics
+    ...topicEntries.slice(0, 2),
     ...(militaryEntry ? [militaryEntry] : []),
     ...(energyEntry   ? [energyEntry]   : []),
-  ].slice(0, 3); // hard cap at 3 — 5.5s × 2 gaps = ~11s total
+  ].slice(0, 3);
 
   console.log(`GDELT running ${finalQueries.length} queries sequentially (rate limited)`);
 
-  // Sequential with 5.5s delay between requests to respect GDELT rate limit
   const results: { category: string; events: GdeltEvent[] }[] = [];
   for (let i = 0; i < finalQueries.length; i++) {
     if (i > 0) await new Promise((r) => setTimeout(r, 5500));
@@ -136,9 +134,9 @@ export async function fetchOSINTEvents(
     const events = await gdeltQuery(query, '24h');
     results.push({ category, events });
   }
-  if (!results || results.length === 0) return '';
 
-  // Dedupe by URL across all categories
+  if (results.length === 0) return '';
+
   const seen     = new Set<string>();
   const sections: string[] = [];
 
@@ -170,4 +168,22 @@ export async function fetchOSINTEvents(
     sections.join('\n\n'),
     '═══ END OSINT ═══',
   ].join('\n');
+}
+
+export async function fetchOSINTEvents(
+  sessionName: string,
+  queries?: Record<string, string>
+): Promise<string> {
+  const queryMap  = queries ?? FALLBACK_QUERIES;
+  const queryKeys = Object.keys(queryMap).sort().join(',');
+  const cacheKey  = `gdelt:osint:${sessionName}:${queryKeys}`;
+  const staleKey  = `gdelt:osint:stale:${sessionName}`;
+
+  return cacheGetOrFetchWithFallback(
+    cacheKey,
+    15 * 60,      // fresh cache: 15 minutes
+    staleKey,
+    24 * 60 * 60, // stale fallback: 24 hours
+    () => fetchOSINTEventsRaw(queryMap)
+  );
 }
