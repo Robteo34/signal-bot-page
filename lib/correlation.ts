@@ -1,6 +1,6 @@
 export interface CorrelationGroup {
   theme: string;
-  direction: 'anti-USD' | 'pro-USD' | 'risk-on' | 'risk-off' | 'anti-oil' | 'pro-oil' | 'anti-JPY' | 'pro-JPY';
+  direction: 'anti-USD' | 'pro-USD' | 'risk-on' | 'risk-off' | 'anti-oil' | 'pro-oil' | 'anti-JPY' | 'pro-JPY' | 'anti-GBP' | 'pro-GBP';
   signals: string[];
 }
 
@@ -11,14 +11,23 @@ const LONG_EXPOSURE: Record<string, string[]> = {
   'Silver':      ['anti-USD', 'risk-off'],
   'XAG/USD':     ['anti-USD', 'risk-off'],
   'EUR/USD':     ['anti-USD'],
-  'GBP/USD':     ['anti-USD'],
+  'GBP/USD':     ['anti-USD', 'pro-GBP'],
   'AUD/USD':     ['anti-USD', 'risk-on'],
   'NZD/USD':     ['anti-USD', 'risk-on'],
   'USD/JPY':     ['pro-USD', 'anti-JPY'],
   'USD/CHF':     ['pro-USD'],
   'USD/CAD':     ['pro-USD', 'anti-oil'],
-  'GBP/JPY':     ['anti-JPY', 'risk-on'],
+  'GBP/JPY':     ['anti-JPY', 'risk-on', 'pro-GBP'],
   'EUR/JPY':     ['anti-JPY', 'risk-on'],
+  'AUD/JPY':     ['anti-JPY', 'risk-on'],
+  'NZD/JPY':     ['anti-JPY', 'risk-on'],
+  'CAD/JPY':     ['anti-JPY', 'pro-oil'],
+  'CHF/JPY':     ['anti-JPY'],
+  'EUR/GBP':     ['anti-GBP'],
+  'GBP/CHF':     ['pro-GBP'],
+  'GBP/AUD':     ['pro-GBP'],
+  'GBP/CAD':     ['pro-GBP'],
+  'GBP/NZD':     ['pro-GBP'],
   'Brent Oil':   ['pro-oil', 'risk-on'],
   'WTI Oil':     ['pro-oil', 'risk-on'],
   'Natural Gas': ['pro-oil'],
@@ -51,6 +60,8 @@ const EXPOSURE_LABELS: Record<string, string> = {
   'pro-oil':  'Bullish oil',
   'anti-JPY': 'Bearish JPY',
   'pro-JPY':  'Bullish JPY',
+  'anti-GBP': 'Bearish GBP',
+  'pro-GBP':  'Bullish GBP',
 };
 
 const INVERT: Record<string, string> = {
@@ -58,6 +69,7 @@ const INVERT: Record<string, string> = {
   'risk-on':  'risk-off', 'risk-off': 'risk-on',
   'anti-oil': 'pro-oil',  'pro-oil':  'anti-oil',
   'anti-JPY': 'pro-JPY',  'pro-JPY':  'anti-JPY',
+  'anti-GBP': 'pro-GBP',  'pro-GBP':  'anti-GBP',
 };
 
 interface SignalInput {
