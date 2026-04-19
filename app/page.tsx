@@ -59,7 +59,7 @@ export default function SignalBotApp() {
   const [dateStr, setDateStr] = useState('');   // Fri 04 Apr 2026 — for display
   const [nextEvent, setNextEvent] = useState({ label: '', minutes: 0 });
   const [screen, setScreen] = useState<Screen>('main');
-  const [detailIndex, setDetailIndex] = useState(0);
+  const [detailAsset, setDetailAsset] = useState<string>('');
   const [isScanning, setIsScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [prices, setPrices] = useState<PriceData | null>(null);
@@ -225,7 +225,9 @@ export default function SignalBotApp() {
     touchStart.current = null;
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)) return;
     if (scanResult?.signals?.length) {
-      setDetailIndex(dx < 0 ? 1 : 0);
+      const sigs = scanResult.signals;
+      const target = dx < 0 ? sigs[1] ?? sigs[0] : sigs[0];
+      setDetailAsset(target.asset);
       setScreen('detail');
     }
   }
@@ -260,8 +262,8 @@ export default function SignalBotApp() {
   // ── Signal detail screen ────────────────────────────────────────────────────
   if (screen === 'detail' && scanResult?.signals?.length) {
     const signals = scanResult.signals;
-    const idx = Math.min(detailIndex, signals.length - 1);
-    const sig = signals[idx];
+    const idx     = Math.max(0, signals.findIndex((s) => s.asset === detailAsset));
+    const sig     = signals[idx];
     const enriched = {
       ...sig,
       ...(idx === 0 ? { entry: scanResult.entry, stop: scanResult.stop, target: scanResult.target } : {}),
@@ -273,8 +275,8 @@ export default function SignalBotApp() {
           currentIndex={idx}
           total={signals.length}
           onClose={() => setScreen('main')}
-          onPrev={() => setDetailIndex((i) => (i - 1 + signals.length) % signals.length)}
-          onNext={() => setDetailIndex((i) => (i + 1) % signals.length)}
+          onPrev={() => setDetailAsset(signals[(idx - 1 + signals.length) % signals.length].asset)}
+          onNext={() => setDetailAsset(signals[(idx + 1) % signals.length].asset)}
         />
       </div>
     );
@@ -381,7 +383,7 @@ export default function SignalBotApp() {
                     platform={sig.platform}
                     overnight_risk={sig.overnight_risk}
                     rr_value={sig.rr_value}
-                    onClick={() => { setDetailIndex(i); setScreen('detail'); }}
+                    onClick={() => { setDetailAsset(sig.asset); setScreen('detail'); }}
                   />
                   {hasId && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 3, padding: '3px 12px 6px', borderBottom: '1px solid #0d0d0d' }}>
