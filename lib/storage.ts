@@ -81,6 +81,8 @@ export interface IntelligenceItem {
   direction: 'LONG' | 'SHORT' | 'HEDGE';
   urgency: IntelUrgency;
   summary: string;          // Polish, max 10 words
+  newsapi_age_minutes?: number;  // age of source article in minutes
+  newsapi_source?: string;       // outlet name (Reuters, Bloomberg, etc.)
 }
 
 // Fresh posts from verified accounts in last 2h that MSM hasn't covered
@@ -93,6 +95,8 @@ export interface BreakingOsint {
   urgency: IntelUrgency;
   lead_time_hours: number;
   category: IntelCategory;
+  newsapi_age_minutes?: number;  // age of source article in minutes
+  newsapi_source?: string;       // outlet name
 }
 
 // Newly discovered accounts worth following

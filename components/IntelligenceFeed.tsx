@@ -42,6 +42,34 @@ const URGENCY_ORDER: Record<IntelUrgency, number> = {
   IMMEDIATE: 0, SOON: 1, WATCH: 2,
 };
 
+// ── Time formatter ────────────────────────────────────────────────────────────
+
+function formatFeedTime(ageMinutes: number | undefined): string {
+  if (ageMinutes == null) return 'MSM';
+  const date    = new Date(Date.now() - ageMinutes * 60 * 1000);
+  const now     = new Date();
+  const diffMin = Math.round(ageMinutes);
+
+  if (diffMin < 1) return 'teraz MSM';
+  if (diffMin < 60) return `${diffMin}m temu MSM`;
+
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 6) {
+    const mins = diffMin % 60;
+    return mins > 0 ? `${diffHours}h ${mins}m temu MSM` : `${diffHours}h temu MSM`;
+  }
+
+  const timeStr    = date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' });
+  const yesterday  = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === now.toDateString()) return `dzisiaj ${timeStr} MSM`;
+  if (date.toDateString() === yesterday.toDateString()) return `wczoraj ${timeStr} MSM`;
+
+  const dateStr = date.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' });
+  return `${dateStr} ${timeStr} MSM`;
+}
+
 // ── Shared sub-components ─────────────────────────────────────────────────────
 
 function CredDots({ score }: { score: number }) {
@@ -161,7 +189,7 @@ function BreakingItem({ item }: { item: BreakingOsint }) {
           {item.direction}
         </span>
         <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#555', marginLeft: 'auto' }}>
-          -{item.lead_time_hours}h MSM
+          {formatFeedTime(item.newsapi_age_minutes)}
         </span>
       </div>
 
@@ -272,7 +300,7 @@ function IntelItem({ item }: { item: IntelligenceItem }) {
           {item.direction}
         </span>
         <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#444', marginLeft: 'auto' }}>
-          -{item.lead_time_hours}h MSM
+          {formatFeedTime(item.newsapi_age_minutes)}
         </span>
       </div>
 
