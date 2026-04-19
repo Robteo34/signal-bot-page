@@ -44,11 +44,20 @@ const URGENCY_ORDER: Record<IntelUrgency, number> = {
 
 // ── Time formatter ────────────────────────────────────────────────────────────
 
-function formatFeedTime(ageMinutes: number | undefined): string {
-  if (ageMinutes == null) return 'MSM';
-  const date    = new Date(Date.now() - ageMinutes * 60 * 1000);
+function formatFeedTime(publishedAt?: string, ageMinutesFallback?: number): string {
+  let date: Date;
+  if (publishedAt) {
+    date = new Date(publishedAt);
+    if (isNaN(date.getTime())) {
+      date = new Date(Date.now() - (ageMinutesFallback ?? 0) * 60000);
+    }
+  } else if (ageMinutesFallback != null) {
+    date = new Date(Date.now() - ageMinutesFallback * 60000);
+  } else {
+    return 'MSM';
+  }
   const now     = new Date();
-  const diffMin = Math.round(ageMinutes);
+  const diffMin = Math.round((now.getTime() - date.getTime()) / 60000);
 
   if (diffMin < 1) return 'teraz MSM';
   if (diffMin < 60) return `${diffMin}m temu MSM`;
@@ -59,8 +68,8 @@ function formatFeedTime(ageMinutes: number | undefined): string {
     return mins > 0 ? `${diffHours}h ${mins}m temu MSM` : `${diffHours}h temu MSM`;
   }
 
-  const timeStr    = date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' });
-  const yesterday  = new Date(now);
+  const timeStr   = date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' });
+  const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
 
   if (date.toDateString() === now.toDateString()) return `dzisiaj ${timeStr} MSM`;
@@ -189,7 +198,7 @@ function BreakingItem({ item }: { item: BreakingOsint }) {
           {item.direction}
         </span>
         <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#555', marginLeft: 'auto' }}>
-          {formatFeedTime(item.newsapi_age_minutes)}
+          {formatFeedTime(item.published_at, item.newsapi_age_minutes)}
         </span>
       </div>
 
@@ -300,7 +309,7 @@ function IntelItem({ item }: { item: IntelligenceItem }) {
           {item.direction}
         </span>
         <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#444', marginLeft: 'auto' }}>
-          {formatFeedTime(item.newsapi_age_minutes)}
+          {formatFeedTime(item.published_at, item.newsapi_age_minutes)}
         </span>
       </div>
 
