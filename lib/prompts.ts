@@ -786,7 +786,7 @@ Violating these rules makes the signal hallucinated and unusable. Empty signals 
 You have VERIFIED FINANCIAL NEWS at the top of this prompt from Marketaux — real articles with exact ageMinutes timestamps and per-entity AI sentiment scores.
 
 ABSOLUTE RULES:
-1. EVERY signal that cites a news event MUST reference a specific item from VERIFIED FINANCIAL NEWS by quoting the source name and ageMinutes (e.g., '[Reuters, 12min ago]').
+1. EVERY signal that cites a news event MUST reference a specific item from VERIFIED FINANCIAL NEWS by quoting the source name and ageMinutes (e.g., '[Reuters, 12min ago]'). Copy the pub: timestamp from that article verbatim into published_at.
 2. NEVER cite '@handle on X said' or 'tweet from @account' — we cannot verify these. Use only news outlets.
 3. NEVER write 'just reported', 'breaking', or 'X minutes ago' unless backed by exact ageMinutes from verified data.
 4. Geopolitical/military signals: REQUIRE a verified news item with ageMinutes <= 240 (4 hours). Without one, no signal — set strength to 0 or skip.
@@ -947,7 +947,7 @@ Return ONLY this exact JSON:
   "breaking_osint": [
     {
       "newsapi_source": "exact source name from verified news list (Reuters/Bloomberg/etc) — required, not optional",
-      "newsapi_age_minutes": 0,
+      "published_at": "ISO timestamp from pub: field in source data — copy exactly, e.g. 2026-04-19T08:23:00Z",
       "credibility": 0,
       "post_summary": "co napisał — max 15 słów po polsku",
       "market_impact": ["Brent Oil"],
@@ -968,7 +968,7 @@ Return ONLY this exact JSON:
       "category": "MILITARY|MACRO|EARNINGS|OPTIONS|CRYPTO|SUPPLY|REGULA",
       "signal": "specific description of what was found in the scan data",
       "newsapi_source": "exact source name from verified news list (Reuters/Bloomberg/etc) — required, not optional",
-      "newsapi_age_minutes": 0,
+      "published_at": "ISO timestamp from pub: field in source data — copy exactly, e.g. 2026-04-19T08:23:00Z",
       "credibility": 0,
       "lead_time_hours": 0,
       "market_impact": ["Brent Oil", "Gold"],

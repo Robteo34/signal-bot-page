@@ -81,7 +81,8 @@ export interface IntelligenceItem {
   direction: 'LONG' | 'SHORT' | 'HEDGE';
   urgency: IntelUrgency;
   summary: string;          // Polish, max 10 words
-  newsapi_age_minutes?: number;  // age of source article in minutes
+  published_at?: string;         // ISO 8601 — source article publication time (copied from pub: field)
+  newsapi_age_minutes?: number;  // legacy fallback — age at scan time (unreliable if all same)
   newsapi_source?: string;       // outlet name (Reuters, Bloomberg, etc.)
 }
 
@@ -95,7 +96,8 @@ export interface BreakingOsint {
   urgency: IntelUrgency;
   lead_time_hours: number;
   category: IntelCategory;
-  newsapi_age_minutes?: number;  // age of source article in minutes
+  published_at?: string;         // ISO 8601 — source article publication time
+  newsapi_age_minutes?: number;  // legacy fallback
   newsapi_source?: string;       // outlet name
 }
 
