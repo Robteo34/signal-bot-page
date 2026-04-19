@@ -160,7 +160,7 @@ async function fetchOSINTEventsRaw(
     if (unique.length === 0) continue;
 
     const lines = unique.map((e) =>
-      `  [${e.ageMinutes}min ago | ${e.source} | ${e.country}] ${e.title}`
+      `  [${e.ageMinutes}min ago | ${e.source} | ${e.country} | pub:${e.publishedAt}] ${e.title}`
     );
     sections.push(`▸ ${category}:\n${lines.join('\n')}`);
   }

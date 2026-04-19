@@ -132,7 +132,7 @@ async function fetchMarketauxNewsRaw(sessionName: string): Promise<string> {
       .join(', ');
 
     const entityStr = topEntities ? ` | entities: ${topEntities}` : '';
-    return `[${a.ageMinutes}min ago | ${a.source}] ${a.title}${entityStr}`;
+    return `[${a.ageMinutes}min ago | ${a.source} | pub:${a.published_at}] ${a.title}${entityStr}`;
   });
 
   return [
